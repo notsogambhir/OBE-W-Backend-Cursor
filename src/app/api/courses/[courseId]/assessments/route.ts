@@ -22,11 +22,21 @@ export async function GET(
     }
 
     // Fetch assessments for the course
+    const { searchParams } = new URL(request.url);
+    const sectionId = searchParams.get('sectionId');
+    
+    let whereClause: any = {
+      courseId,
+      isActive: true
+    };
+
+    // If sectionId is provided, filter by section
+    if (sectionId) {
+      whereClause.sectionId = sectionId;
+    }
+
     const assessments = await db.assessment.findMany({
-      where: {
-        courseId: courseId,
-        isActive: true
-      },
+      where: whereClause,
       orderBy: {
         createdAt: 'asc'
       }
@@ -64,10 +74,10 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { name, type, maxMarks, weightage } = body;
+    const { name, type, maxMarks, weightage, sectionId } = body;
 
-    if (!name || !type || !maxMarks || !weightage) {
-      return NextResponse.json({ error: 'All assessment fields are required' }, { status: 400 });
+    if (!name || !type || !maxMarks || !weightage || !sectionId) {
+      return NextResponse.json({ error: 'All assessment fields are required, including sectionId' }, { status: 400 });
     }
 
     if (!['exam', 'quiz', 'assignment', 'project'].includes(type)) {
@@ -90,11 +100,29 @@ export async function POST(
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
-    // Check permissions for program coordinators
-    if (user.role === 'PROGRAM_COORDINATOR' && course.batch.programId !== user.programId) {
+    // Check permissions
+    const canManageAssessments = 
+      user.role === 'ADMIN' || 
+      user.role === 'UNIVERSITY' || 
+      (user.role === 'PROGRAM_COORDINATOR' && course.batch.programId === user.programId) ||
+      (user.role === 'TEACHER' && await canTeacherManageCourse(user.id, courseId, sectionId));
+
+    if (!canManageAssessments) {
       return NextResponse.json({ 
-        error: 'You can only manage assessments for courses in your assigned program' 
+        error: 'Insufficient permissions to create assessments for this course/section' 
       }, { status: 403 });
+    }
+
+    // Verify the section exists and belongs to this course
+    const section = await db.section.findUnique({
+      where: { id: sectionId },
+      include: {
+        batch: true
+      }
+    });
+
+    if (!section || section.batchId !== course.batchId) {
+      return NextResponse.json({ error: 'Invalid section for this course' }, { status: 400 });
     }
 
     // Create new assessment

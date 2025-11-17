@@ -24,6 +24,7 @@ model User {
   collegeId   String?
   programId   String?
   batchId     String?  // Added for students
+  sectionId   String?  // Added for students - section assignment
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -32,9 +33,11 @@ model User {
   program     Program?     @relation("ProgramUsers", fields: [programId], references: [id])
   programAsStudent Program? @relation("ProgramStudents", fields: [programId], references: [id])
   batch       Batch?       @relation("BatchStudents", fields: [batchId], references: [id])
+  section     Section?     @relation(fields: [sectionId], references: [id])
   enrollments Enrollment[]
   coAttainments COAttainment[]
   studentMarks StudentMark[]
+  teacherAssignments TeacherAssignment[]
   
   @@map("users")
 }
@@ -87,10 +90,30 @@ model Batch {
 
 program   Program  @relation(fields: [programId], references: [id])
   courses   Course[]
+  sections  Section[]  // A batch can have multiple sections
   students  User[]   @relation("BatchStudents")
   
   @@unique([programId, name])
   @@map("batches")
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  name      String   // Section name like "A", "B", "C"
+  batchId   String   // Section belongs to a specific batch
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  batch     Batch    @relation(fields: [batchId], references: [id])
+  students  User[]   
+  assessments Assessment[]  // Assessments are created for sections
+  teacherAssignments TeacherAssignment[]  // Teachers assigned to sections
+  coAttainments COAttainment[]  // CO attainments for sections
+  studentMarks StudentMark[]   // Student marks for sections
+  
+  @@unique([batchId, name])
+  @@map("sections")
 }
 
 model Course {
@@ -114,6 +137,7 @@ model Course {
   enrollments   Enrollment[]
   coPOMappings  COPOMapping[]
   coAttainments COAttainment[]
+  teacherAssignments TeacherAssignment[]  // Course-level teacher assignments
   
   @@unique([batchId, code])
   @@map("courses")
@@ -182,9 +206,27 @@ model COPOMapping {
   @@map("co_po_mappings")
 }
 
+model TeacherAssignment {
+  id           String   @id @default(cuid())
+  courseId     String   // Course this assignment is for
+  sectionId    String?  // Section this assignment is for (null for course-level assignment)
+  teacherId    String   // Teacher assigned
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  course       Course  @relation(fields: [courseId], references: [id])
+  section      Section? @relation(fields: [sectionId], references: [id])
+  teacher      User    @relation(fields: [teacherId], references: [id])
+  
+  @@unique([courseId, sectionId, teacherId])
+  @@map("teacher_assignments")
+}
+
 model Assessment {
   id          String   @id @default(cuid())
   courseId    String
+  sectionId   String?  // Assessment belongs to a specific section (nullable for migration)
   name        String
   type        String   // exam, quiz, assignment, project
   maxMarks    Int
@@ -194,8 +236,10 @@ model Assessment {
   updatedAt   DateTime @updatedAt
 
   course       Course @relation(fields: [courseId], references: [id])
+  section      Section? @relation(fields: [sectionId], references: [id])
   questions    Question[]
   
+  @@unique([courseId, sectionId, name])
   @@map("assessments")
 }
 
@@ -247,6 +291,7 @@ model Enrollment {
 model COAttainment {
   id                   String   @id @default(cuid())
   courseId             String
+  sectionId            String?  // Section this attainment is for (null for course-level)
   coId                 String
   studentId            String
   percentage           Float    // Student's percentage for this CO
@@ -255,16 +300,18 @@ model COAttainment {
   academicYear         String?  // Academic year for filtering
   
   course               Course   @relation(fields: [courseId], references: [id])
+  section              Section? @relation(fields: [sectionId], references: [id])
   co                   CO       @relation(fields: [coId], references: [id])
   student              User     @relation(fields: [studentId], references: [id])
   
-  @@unique([courseId, coId, studentId, academicYear])
+  @@unique([courseId, sectionId, coId, studentId, academicYear])
   @@map("co_attainments")
 }
 
 model StudentMark {
   id           String   @id @default(cuid())
   questionId   String
+  sectionId    String?  // Section this mark is for (null for course-level)
   studentId    String
   obtainedMarks Int     // Marks obtained by student for this question
   maxMarks     Int      // Maximum marks for this question (redundant but useful)
@@ -272,9 +319,10 @@ model StudentMark {
   academicYear String?  // Academic year for filtering
   
   question     Question @relation(fields: [questionId], references: [id])
+  section      Section? @relation(fields: [sectionId], references: [id])
   student      User     @relation(fields: [studentId], references: [id])
   
-  @@unique([questionId, studentId, academicYear])
+  @@unique([questionId, sectionId, studentId, academicYear])
   @@map("student_marks")
 }
 

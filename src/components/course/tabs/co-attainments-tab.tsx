@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Target, 
   BarChart3, 
@@ -49,6 +50,8 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
   });
   const [loading, setLoading] = useState(false);
   const [lastCalculated, setLastCalculated] = useState<string>('');
+  const [selectedSection, setSelectedSection] = useState<string>('overall');
+  const [sections, setSections] = useState<any[]>([]);
 
   useEffect(() => {
     if (courseData?.courseOutcomes) {

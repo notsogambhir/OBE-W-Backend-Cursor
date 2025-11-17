@@ -1,23 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { db } from '@/lib/db';
-import { verifyToken } from '@/lib/auth';
+import { getUserFromRequest } from '@/lib/server-auth';
 import { studentSchema } from '@/lib/validations/student';
 
 // GET /api/students - Get all students for the current program/batch
 export async function GET(request: NextRequest) {
   try {
-    // Get token from cookie
-    const token = request.cookies.get('auth-token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
+    // Get user using the enhanced auth function (supports both header and cookie)
+    const user = await getUserFromRequest(request);
     
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized - No valid token provided' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -131,17 +125,11 @@ export async function GET(request: NextRequest) {
 // POST /api/students - Create a new student
 export async function POST(request: NextRequest) {
   try {
-    // Get token from cookie
-    const token = request.cookies.get('auth-token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
+    // Get user using the enhanced auth function (supports both header and cookie)
+    const user = await getUserFromRequest(request);
     
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized - No valid token provided' }, { status: 401 });
     }
 
     // Only department, program coordinator, and admin roles can create students

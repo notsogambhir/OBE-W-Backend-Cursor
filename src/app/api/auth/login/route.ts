@@ -35,38 +35,47 @@ export async function POST(request: NextRequest) {
       programId: user.programId
     });
 
-    const token = generateToken({
-      id: user.id,
-      email: user.email || '',
-      name: user.name,
-      role: user.role,
-      collegeId: user.collegeId || null,
-      programId: user.programId || null,
-      batchId: user.batchId || null,
-    });
-    console.log('Generated token (first 20 chars):', token.substring(0, 20) + '...');
-
-    const response = NextResponse.json({
-      user: {
+    try {
+      const token = generateToken({
         id: user.id,
-        email: user.email,
+        email: user.email || '',
         name: user.name,
         role: user.role,
-        collegeId: user.collegeId,
-        programId: user.programId,
-      },
-      token,
-    });
+        collegeId: user.collegeId || null,
+        programId: user.programId || null,
+        batchId: user.batchId || null,
+      });
+      console.log('Generated token (first 20 chars):', token.substring(0, 20) + '...');
 
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
+      const response = NextResponse.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          collegeId: user.collegeId,
+          programId: user.programId,
+        },
+        token,
+      });
 
-    console.log('Cookie set in response');
-    return response;
+      response.cookies.set('auth-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+      });
+
+      console.log('Cookie set in response');
+      console.log('About to return response...');
+      return response;
+    } catch (tokenError) {
+      console.error('Error during token/response generation:', tokenError);
+      return NextResponse.json(
+        { error: 'Token generation failed' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

@@ -25,6 +25,7 @@ import { AssessmentsTab } from '@/components/course/tabs/assessments-tab-new';
 import { COPOMappingTab } from '@/components/course/tabs/co-po-mapping-tab';
 import { COAttainmentsTab } from '@/components/course/tabs/co-attainments-tab';
 import { StudentReportsTab } from '@/components/course/tabs/student-reports-tab';
+import { TeacherAssignment } from '@/components/teacher-assignment';
 
 interface Course {
   id: string;
@@ -50,8 +51,15 @@ export default function ManageCoursePage() {
   const courseId = params.courseId as string;
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // Get user from localStorage or context
+    const storedUser = localStorage.getItem('obe-user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    
     fetchCourse();
     
     // Listen for CO updates to refresh course data
@@ -212,6 +220,12 @@ export default function ManageCoursePage() {
             <Users className="h-4 w-4" />
             Student Reports
           </TabsTrigger>
+          {user && ['ADMIN', 'UNIVERSITY', 'PROGRAM_COORDINATOR'].includes(user.role) && (
+            <TabsTrigger value="teacher-assignment" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Faculty Assignment
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview">
@@ -237,6 +251,12 @@ export default function ManageCoursePage() {
         <TabsContent value="student-reports">
           <StudentReportsTab courseId={courseId} courseData={course} />
         </TabsContent>
+        
+        {user && ['ADMIN', 'UNIVERSITY', 'PROGRAM_COORDINATOR'].includes(user.role) && (
+          <TabsContent value="teacher-assignment">
+            <TeacherAssignment courseId={courseId} user={user} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

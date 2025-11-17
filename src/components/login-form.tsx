@@ -237,7 +237,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('admin@obeportal.com', 'password123')}
+                  onClick={() => handleQuickLogin('admin@obeportal.com', 'admin123')}
                   className="text-xs"
                 >
                   Admin
@@ -246,7 +246,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('university@obeportal.com', 'password123')}
+                  onClick={() => handleQuickLogin('university@obeportal.com', 'university123')}
                   className="text-xs"
                 >
                   University
@@ -255,25 +255,52 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('cse@obeportal.com', 'password123', 'CUIET')}
+                  onClick={() => handleQuickLogin('cse@obeportal.com', 'department123')}
                   className="text-xs"
                 >
-                  Dept Head (CUIET)
+                  Dept Head (CSE)
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('business@obeportal.com', 'password123', 'CBS')}
+                  onClick={() => handleQuickLogin('eee@obeportal.com', 'department123')}
                   className="text-xs"
                 >
-                  Dept Head (CBS)
+                  Dept Head (EEE)
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('pc.bba@obeportal.com', 'password123', 'CBS')}
+                  onClick={() => handleQuickLogin('teacher1@obeportal.com', 'teacher123')}
+                  className="text-xs"
+                >
+                  Teacher 1
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickLogin('teacher2@obeportal.com', 'teacher123')}
+                  className="text-xs"
+                >
+                  Teacher 2
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickLogin('teacher3@obeportal.com', 'teacher123')}
+                  className="text-xs"
+                >
+                  Teacher 3
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickLogin('program1@obeportal.com', 'program123')}
                   className="text-xs"
                 >
                   Program Coord (BBA)
@@ -282,19 +309,37 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('pc.beme@obeportal.com', 'password123', 'CUIET')}
+                  onClick={() => handleQuickLogin('program2@obeportal.com', 'program123')}
                   className="text-xs"
                 >
-                  Program Coord (BE ME)
+                  Program Coord (BBA)
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('teacher1@obeportal.com', 'password123', 'CUIET')}
+                  onClick={() => handleQuickLogin('student1@obeportal.com', 'student123')}
                   className="text-xs"
                 >
-                  Teacher 1 (CUIET)
+                  Student 1
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickLogin('student2@obeportal.com', 'student123')}
+                  className="text-xs"
+                >
+                  Student 2
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickLogin('student3@obeportal.com', 'student123')}
+                  className="text-xs"
+                >
+                  Student 3
                 </Button>
               </div>
               <div className="mt-3 space-y-1 text-xs text-blue-600">
@@ -302,8 +347,10 @@ export function LoginForm() {
                 <p><strong>Test Accounts:</strong></p>
                 <p>• Admin: admin@obeportal.com</p>
                 <p>• University: university@obeportal.com</p>
-                <p>• Department Head: cse@obeportal.com / business@obeportal.com</p>
-                <p>• Program Coordinator: pc.beme@obeportal.com / pc.bba@obeportal.com</p>
+                <p>• Department Head (CSE): cse@obeportal.com</p>
+                <p>• Department Head (EEE): eee@obeportal.com</p>
+                <p>• Program Coordinator (BBA): program1@obeportal.com</p>
+                <p>• Program Coordinator (BBA): program2@obeportal.com</p>
                 <p>• Teacher: teacher1@obeportal.com / teacher2@obeportal.com</p>
                 <p>• Student: student1@obeportal.com / student2@obeportal.com</p>
               </div>

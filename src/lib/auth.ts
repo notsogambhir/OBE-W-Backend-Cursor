@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { AuthUser, DbUser, User } from '@/types/user';
 
@@ -62,6 +63,17 @@ export function verifyToken(token: string): AuthUser | null {
   } catch (error) {
     return null;
   }
+}
+
+export function extractTokenFromRequest(request: NextRequest): string | null {
+  // First try to get from Authorization header (for cross-origin requests)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  // Fall back to cookies (for same-origin requests)
+  return request.cookies.get('auth-token')?.value || null;
 }
 
 export async function authenticateUser(email: string, password: string, collegeId?: string): Promise<User | null> {

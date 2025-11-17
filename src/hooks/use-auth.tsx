@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, AuthUser } from '@/types/user';
+import { createApiUrl, getAuthHeaders, saveAuthToken, clearAuthToken } from '@/lib/api-config';
 
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -97,8 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
     try {
-      const response = await fetch(`/api/auth/me`, {
-        credentials: 'include',
+      const response = await fetch(createApiUrl(`/api/auth/me`), {
+        headers: getAuthHeaders(),
         signal: controller.signal,
       });
       
@@ -149,6 +150,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('Email:', email);
     console.log('College ID:', collegeId);
     
+    // Clear any existing token to ensure fresh authentication
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('obe-auth-token');
+      console.log('Cleared existing token from localStorage');
+    }
+    
     // Input validation
     if (!email || !password) {
       const error = new Error('Email and password are required');
@@ -162,19 +169,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
     
-    // Use relative URL to work in both development and production
-    console.log('Request URL: /api/auth/login');
+    // Use configured URL to work in both development and production
+    console.log('Request URL:', createApiUrl('/api/auth/login'));
     
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const response = await fetch(`/api/auth/login`, {
+      const response = await fetch(createApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({ email, password, collegeId }),
         signal: controller.signal,
       });
@@ -200,6 +206,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       console.log('Login successful, received data:', data);
       
+      // Save the token for development cross-origin requests
+      if (data.token) {
+        saveAuthToken(data.token);
+        console.log('Token saved successfully');
+      }
+      
       const userData = authUserToUser(data.user);
       setUser(userData);
       
@@ -207,21 +219,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('obe-user', JSON.stringify(data.user));
       console.log('User data saved to localStorage');
       
-      // Verify the login worked by checking auth status
+      // Verify the login worked by checking auth status (allow time for cookie to be set)
       setTimeout(async () => {
         try {
-          const verifyResponse = await fetch('/api/auth/me', {
-            credentials: 'include',
+          console.log('Post-login verification - checking auth status...');
+          const verifyResponse = await fetch(createApiUrl('/api/auth/me'), {
+            // Don't send Authorization header here - let cookie work
+            headers: {
+              'Content-Type': 'application/json',
+            },
           });
           if (verifyResponse.ok) {
             console.log('Post-login verification successful');
           } else {
-            console.log('Post-login verification failed, token may not be set yet');
+            console.log('Post-login verification failed, trying with token...');
+            // Fallback: try with token if cookie doesn't work
+            const token = localStorage.getItem('obe-auth-token');
+            if (token) {
+              const tokenResponse = await fetch(createApiUrl('/api/auth/me'), {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+              if (tokenResponse.ok) {
+                console.log('Post-login verification successful with token');
+              } else {
+                console.log('Post-login verification failed even with token');
+              }
+            }
           }
         } catch (error) {
           console.log('Post-login verification error:', error);
         }
-      }, 100);
+      }, 500); // Increased timeout to allow cookie to be set
       
     } catch (error) {
       console.error('Login failed:', error);
@@ -240,13 +271,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      // Use relative URL to work in both development and production
+      // Use configured URL to work in both development and production
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-      const response = await fetch(`/api/auth/logout`, { 
+      const response = await fetch(createApiUrl('/api/auth/logout'), { 
         method: 'POST',
-        credentials: 'include',
+        headers: getAuthHeaders(),
         signal: controller.signal,
       });
 
@@ -272,6 +303,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear localStorage on logout
       localStorage.removeItem('obe-user');
       localStorage.removeItem('obe-selected-batch');
+      // Clear auth token
+      clearAuthToken();
     }
   };
 
