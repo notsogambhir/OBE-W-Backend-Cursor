@@ -27,11 +27,11 @@ interface User {
   employeeId?: string;
   name: string;
   role: string;
-  departmentId?: string;
+  collegeId?: string;
   programId?: string;
   batchId?: string;
   isActive: boolean;
-  department?: {
+  college?: {
     name: string;
     code: string;
   };
@@ -57,7 +57,7 @@ interface Program {
   id: string;
   name: string;
   code: string;
-  departmentId: string;
+  collegeId: string;
   description?: string;
   duration?: number;
 }
@@ -196,13 +196,13 @@ export default function FacultyManagement() {
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesDepartment = !selectedDepartment || selectedDepartment === 'all' || user.departmentId === selectedDepartment;
+    const matchesDepartment = !selectedDepartment || selectedDepartment === 'all' || user.collegeId === selectedDepartment;
     const matchesProgram = !selectedProgram || selectedProgram === 'all' || user.programId === selectedProgram;
     return matchesSearch && matchesDepartment && matchesProgram;
   });
 
   const availablePrograms = programs.filter(program => 
-    !selectedDepartment || selectedDepartment === 'all' || program.departmentId === selectedDepartment
+    !selectedDepartment || selectedDepartment === 'all' || program.collegeId === selectedDepartment
   );
 
   if (loading) {
@@ -224,7 +224,7 @@ export default function FacultyManagement() {
              'Faculty Management'}
           </h1>
           <p className="text-gray-600 mt-2">
-            {user?.role === 'DEPARTMENT' ? 'Manage faculty members in your department' :
+            {user?.role === 'DEPARTMENT' ? 'Manage faculty members in your college' :
              user?.role === 'PROGRAM_COORDINATOR' ? 'Manage faculty members in your program' :
              user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' ? 'Manage all faculty members across the institution' :
              'Manage faculty members'}
@@ -258,13 +258,13 @@ export default function FacultyManagement() {
               />
             </div>
             <div>
-              <Label htmlFor="department">Department</Label>
+              <Label htmlFor="department">College</Label>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Departments" />
+                  <SelectValue placeholder="All Colleges" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
+                  <SelectItem value="all">All Colleges</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
@@ -303,7 +303,7 @@ export default function FacultyManagement() {
              'Program Coordinators'}
           </CardTitle>
           <CardDescription>
-            {user?.role === 'DEPARTMENT' ? 'View and manage faculty members in your department' :
+            {user?.role === 'DEPARTMENT' ? 'View and manage faculty members in your college' :
              user?.role === 'PROGRAM_COORDINATOR' ? 'View and manage faculty members in your program' :
              user?.role === 'ADMIN' || user?.role === 'UNIVERSITY' ? 'View and manage all faculty members across the institution' :
              'Manage program coordinators and assign them to specific programs'}
@@ -339,16 +339,10 @@ export default function FacultyManagement() {
                         <Badge variant="outline" className="text-xs">
                           {userItem.role.replace('_', ' ')}
                         </Badge>
-                        {/* Show multiple departments for teachers */}
-                        {userItem.role === 'TEACHER' && userItem.userDepartments && userItem.userDepartments.length > 0 ? (
-                          userItem.userDepartments.map((ud, index) => (
-                            <Badge key={ud.id} variant="secondary" className="text-xs">
-                              {ud.department.name}
-                            </Badge>
-                          ))
-                        ) : userItem.department && userItem.role !== 'TEACHER' ? (
+                        {/* Show college for all users except students */}
+                        {userItem.college && userItem.role !== 'STUDENT' ? (
                           <Badge variant="secondary" className="text-xs">
-                            {userItem.department.name}
+                            {userItem.college.name}
                           </Badge>
                         ) : null}
                         {userItem.program && (
@@ -416,7 +410,7 @@ export default function FacultyManagement() {
                       {program.name} ({program.code})
                     </Label>
                     <Badge variant="outline" className="text-xs">
-                      Dept: {program.departmentId}
+                      College: {program.collegeId}
                     </Badge>
                   </div>
                 ))}

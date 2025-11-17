@@ -46,10 +46,10 @@ interface Course {
       code: string;
     };
   };
-  _count: {
-    courseOutcomes: number;
-    assessments: number;
-    enrollments: number;
+  _count?: {
+    courseOutcomes?: number;
+    assessments?: number;
+    enrollments?: number;
   };
 }
 
@@ -99,7 +99,7 @@ function CourseCategory({ title, courses, status, defaultExpanded = false, onUpd
   const isDeleting = (courseId: string) => deletingCourseId === courseId;
 
   const canDeleteCourse = (course: Course) => {
-    return course.status === 'FUTURE' || (course.status === 'COMPLETED' && course._count.enrollments === 0);
+    return course.status === 'FUTURE' || (course.status === 'COMPLETED' && (course._count?.enrollments || 0) === 0);
   };
 
   return (
@@ -145,17 +145,17 @@ function CourseCategory({ title, courses, status, defaultExpanded = false, onUpd
                       <p className="text-sm font-medium text-gray-900">{course.name}</p>
                       <p className="text-xs text-gray-600">{course.code}</p>
                       <p className="text-xs text-gray-500">{course.batch?.program?.name || 'Unknown Program'} • {course.batch?.name || 'Unknown Batch'}</p>
-                      {status === 'ACTIVE' && course._count.enrollments > 0 && (
+                      {status === 'ACTIVE' && (course._count?.enrollments || 0) > 0 && (
                         <p className="text-xs text-green-600 font-medium">
-                          {course._count.enrollments} students enrolled
+                          {course._count?.enrollments || 0} students enrolled
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">{course._count.enrollments} Students</Badge>
-                    <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200 text-xs">{course._count.courseOutcomes} COs</Badge>
-                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{course._count.assessments} Assessments</Badge>
+                    <Badge variant="outline" className="text-xs">{course._count?.enrollments || 0} Students</Badge>
+                    <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200 text-xs">{course._count?.courseOutcomes || 0} COs</Badge>
+                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{course._count?.assessments || 0} Assessments</Badge>
                     <Badge className={`text-xs ${getStatusBadgeColor(course.status)}`}>
                       {course.status}
                     </Badge>
@@ -230,9 +230,9 @@ function CourseCategory({ title, courses, status, defaultExpanded = false, onUpd
                                 This action cannot be undone and will permanently delete:
                                 <ul className="list-disc list-inside mt-2 space-y-1">
                                   <li>Course information and settings</li>
-                                  {course._count.courseOutcomes > 0 && <li>{course._count.courseOutcomes} course outcomes</li>}
-                                  {course._count.assessments > 0 && <li>{course._count.assessments} assessments</li>}
-                                  {course._count.enrollments > 0 && <li>{course._count.enrollments} student enrollments</li>}
+                                  {(course._count?.courseOutcomes || 0) > 0 && <li>{course._count.courseOutcomes} course outcomes</li>}
+                                  {(course._count?.assessments || 0) > 0 && <li>{course._count.assessments} assessments</li>}
+                                  {(course._count?.enrollments || 0) > 0 && <li>{course._count.enrollments} student enrollments</li>}
                                 </ul>
                               </AlertDialogDescription>
                             </AlertDialogHeader>

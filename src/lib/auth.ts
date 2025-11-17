@@ -77,8 +77,9 @@ export async function authenticateUser(email: string, password: string, collegeI
     return null;
   }
 
-  // Validate college for department role
-  if (user.role === 'DEPARTMENT' && collegeId && user.collegeId !== collegeId) {
+  // Validate college for department role and non-admin roles
+  // Admin users can access any college, so don't validate collegeId for them
+  if (user.role !== 'ADMIN' && collegeId && user.collegeId !== collegeId) {
     return null;
   }
 

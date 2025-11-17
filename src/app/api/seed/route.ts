@@ -15,13 +15,11 @@ export async function POST() {
     await db.cOPOMapping.deleteMany({});
     await db.cO.deleteMany({});
     await db.course.deleteMany({});
-    await db.userDepartment.deleteMany({});
-    await db.user.deleteMany({});
     await db.batch.deleteMany({});
-    await db.program.deleteMany({});
-    await db.department.deleteMany({});
-    await db.college.deleteMany({});
+    await db.user.deleteMany({});
     await db.pO.deleteMany({});
+    await db.program.deleteMany({});
+    await db.college.deleteMany({});
     await db.pEO.deleteMany({});
     
     // Create colleges
@@ -42,24 +40,6 @@ export async function POST() {
       }),
     ]);
 
-    // Create departments
-    const departments = await Promise.all([
-      db.department.create({
-        data: {
-          name: 'CUIET',
-          code: 'CUIET',
-          collegeId: colleges[0].id,
-        },
-      }),
-      db.department.create({
-        data: {
-          name: 'CBS',
-          code: 'CBS',
-          collegeId: colleges[1].id,
-        },
-      }),
-    ]);
-
     // Create programs
     const programs = await Promise.all([
       db.program.create({
@@ -67,7 +47,6 @@ export async function POST() {
           name: 'BE ME',
           code: 'BEME',
           collegeId: colleges[0].id,
-          departmentId: departments[0].id,
           duration: 4,
         },
       }),
@@ -76,7 +55,6 @@ export async function POST() {
           name: 'BBA',
           code: 'BBA',
           collegeId: colleges[1].id,
-          departmentId: departments[1].id,
           duration: 3,
         },
       }),
@@ -130,7 +108,6 @@ export async function POST() {
           name: 'CUIET Department Head',
           role: 'DEPARTMENT',
           collegeId: colleges[0].id,
-          departmentId: departments[0].id,
         },
       }),
       db.user.create({
@@ -140,7 +117,6 @@ export async function POST() {
           name: 'CBS Department Head',
           role: 'DEPARTMENT',
           collegeId: colleges[1].id,
-          departmentId: departments[1].id,
         },
       }),
       // Program Coordinators

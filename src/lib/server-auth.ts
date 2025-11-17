@@ -40,3 +40,7 @@ export async function getUserFromRequest(request: NextRequest) {
     return null;
   }
 }
+
+export function canCreateCourse(user: any) {
+  return user && ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR'].includes(user.role);
+}
