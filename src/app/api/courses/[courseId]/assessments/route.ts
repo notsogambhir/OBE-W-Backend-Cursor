@@ -104,7 +104,8 @@ export async function POST(
     const canManageAssessments = 
       user.role === 'ADMIN' || 
       user.role === 'UNIVERSITY' || 
-      (user.role === 'PROGRAM_COORDINATOR' && course.batch.programId === user.programId);
+      (user.role === 'PROGRAM_COORDINATOR' && course.batch.programId === user.programId) ||
+      (user.role === 'TEACHER' && await canTeacherManageCourse(user.id, courseId, sectionId));
 
     if (!canManageAssessments) {
       return NextResponse.json({ 
@@ -128,7 +129,6 @@ export async function POST(
     const newAssessment = await db.assessment.create({
       data: {
         courseId: courseId,
-        sectionId: sectionId,  // Include sectionId to make assessment section-specific
         name: name.trim(),
         type,
         maxMarks: parseInt(maxMarks),

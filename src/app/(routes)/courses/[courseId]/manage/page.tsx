@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { courseEvents } from '@/lib/course-events';
+
+// Import tab components
 import { OverviewTab } from '@/components/course/tabs/overview-tab';
 import { COsTab } from '@/components/course/tabs/cos-tab';
 import { AssessmentsTab } from '@/components/course/tabs/assessments-tab-new';
@@ -54,24 +56,14 @@ export default function ManageCoursePage() {
   useEffect(() => {
     // Get user from localStorage or context
     const storedUser = localStorage.getItem('obe-user');
-    console.log('Stored user from localStorage:', storedUser);
-    
     if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        console.log('Parsed user:', parsedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-      }
+      setUser(JSON.parse(storedUser));
     }
     
-    console.log('About to fetch course with courseId:', courseId);
     fetchCourse();
     
     // Listen for CO updates to refresh course data
     const handleCOUpdate = () => {
-      console.log('CO update event triggered, refetching course');
       fetchCourse();
     };
     
@@ -85,21 +77,14 @@ export default function ManageCoursePage() {
   const fetchCourse = async () => {
     setLoading(true);
     try {
-      console.log('Fetching course with courseId:', courseId);
       const response = await fetch(`/api/courses/${courseId}`);
-      console.log('Course fetch response status:', response.status);
-      
       if (!response.ok) {
-        console.error('Failed to fetch course:', response.status, response.statusText);
-        throw new Error(`Failed to fetch course: ${response.status} ${response.statusText}`);
+        throw new Error('Failed to fetch course');
       }
-      
       const courseData = await response.json();
-      console.log('Course data received:', courseData);
       setCourse(courseData);
     } catch (error) {
-      console.error('Error in fetchCourse:', error);
-      setCourse(null);
+      console.error('Failed to fetch course:', error);
     } finally {
       setLoading(false);
     }
@@ -118,72 +103,6 @@ export default function ManageCoursePage() {
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-gray-900">Course not found</h2>
         <p className="text-gray-600 mt-2">The course you're looking for doesn't exist.</p>
-        <p className="text-sm text-gray-500 mt-4">Course ID: {courseId}</p>
-        <Link href="/courses">
-          <Button className="mt-4">Back to Courses</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  // Add user permission check
-  const hasCourseAccess = () => {
-    if (!user || !course) return false;
-    
-    // Check permissions based on user role
-    switch (user.role) {
-      case 'ADMIN':
-      case 'UNIVERSITY':
-        return true;
-      case 'PROGRAM_COORDINATOR':
-        return course.batch.programId === user.programId;
-      case 'DEPARTMENT':
-        return course.batch.program.collegeId === user.collegeId;
-      case 'TEACHER':
-        return course.batchId === user.batchId; // Teachers can access courses in their batch
-      default:
-        return false;
-    }
-  };
-
-  const getAccessRequirement = (user: any, course: any) => {
-    if (!user || !course) return 'Authentication required';
-    
-    switch (user.role) {
-      case 'ADMIN':
-      case 'UNIVERSITY':
-        return 'Full access granted';
-      case 'PROGRAM_COORDINATOR':
-        return course.batch.programId === user.programId 
-          ? 'Program Coordinator access granted' 
-          : `You can only access courses from your assigned program (${course?.batch?.program?.name || 'Unknown'})`;
-      case 'DEPARTMENT':
-        return course.batch.program.collegeId === user.collegeId 
-          ? 'Department access granted' 
-          : `You can only access courses from your college (${course?.batch?.program?.collegeId || 'Unknown'})`;
-      case 'TEACHER':
-        return course.batchId === user.batchId 
-          ? 'Teacher access granted' 
-          : `You can only access courses from your batch (${course?.batch?.name || 'Unknown'})`;
-      default:
-        return 'Limited access';
-    }
-  };
-
-  if (!hasCourseAccess()) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
-        <p className="text-gray-600 mt-2">You don't have permission to access this course.</p>
-        <div className="mt-4 p-4 bg-red-50 border-red-200 rounded-lg">
-          <p className="font-medium">Access Details:</p>
-          <p><strong>Your Role:</strong> {user?.role || 'Unknown'}</p>
-          <p><strong>Required Access:</strong> {getAccessRequirement(user, course)}</p>
-          <p><strong>Course:</strong> {course?.name || 'Unknown'} ({course?.code || 'Unknown'})</p>
-        </div>
-        <Link href="/courses">
-          <Button className="mt-4">Back to Courses</Button>
-        </Link>
       </div>
     );
   }
@@ -199,23 +118,25 @@ export default function ManageCoursePage() {
           </Button>
         </Link>
         <div className="flex-1">
-          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-            <BookOpen className="h-4 w-4 text-gray-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">{course.name}</h1>
-            <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-              <span>{course.code}</span>
-              <span>•</span>
-              <span>{course.semester} Semester</span>
-              <Badge variant="outline" className="text-xs">{course.programName}</Badge>
-              <Badge variant="secondary" className="text-xs">{course.batchName}</Badge>
-              <Badge 
-                variant={course.status === 'ACTIVE' ? 'default' : course.status === 'COMPLETED' ? 'secondary' : 'outline'} 
-                className="text-xs"
-              >
-                {course.status}
-              </Badge>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <BookOpen className="h-4 w-4 text-gray-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">{course.name}</h1>
+              <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                <span>{course.code}</span>
+                <span>•</span>
+                <span>{course.semester} Semester</span>
+                <Badge variant="outline" className="text-xs">{course.programName}</Badge>
+                <Badge variant="secondary" className="text-xs">{course.batchName}</Badge>
+                <Badge 
+                  variant={course.status === 'ACTIVE' ? 'default' : course.status === 'COMPLETED' ? 'secondary' : 'outline'} 
+                  className="text-xs"
+                >
+                  {course.status}
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
@@ -234,6 +155,7 @@ export default function ManageCoursePage() {
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -242,28 +164,32 @@ export default function ManageCoursePage() {
                 <div className="text-lg font-semibold">{course.stats.assessments}</div>
                 <p className="text-xs text-gray-500">Assessments</p>
               </div>
-            </CardContent>
+            </div>
+          </CardContent>
         </Card>
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <Target className="h-4 w-4 text-purple-600" />
               <div>
-                <div className="text-lg font-semibold">[85%]</div>
-                <p className="text-xs text-gray-500">Attainment</p>
+                <div className="text-lg font-semibold">{course.stats.cos}</div>
+                <p className="text-xs text-gray-500">COs</p>
               </div>
-            </CardContent>
+            </div>
+          </CardContent>
         </Card>
-      </div>
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Target className="h-4 w-4 text-purple-600" />
+              <BarChart3 className="h-4 w-4 text-orange-600" />
               <div>
                 <div className="text-lg font-semibold">[85%]</div>
                 <p className="text-xs text-gray-500">Attainment</p>
               </div>
-            </CardContent>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
@@ -305,18 +231,23 @@ export default function ManageCoursePage() {
         <TabsContent value="overview">
           <OverviewTab courseId={courseId} courseData={course} />
         </TabsContent>
+
         <TabsContent value="cos">
           <COsTab courseId={courseId} courseData={course} />
         </TabsContent>
+
         <TabsContent value="assessments">
           <AssessmentsTab courseId={courseId} courseData={course} />
         </TabsContent>
+
         <TabsContent value="co-po-mapping">
           <COPOMappingTab courseId={courseId} courseData={course} />
         </TabsContent>
+
         <TabsContent value="co-attainments">
           <COAttainmentsTab courseId={courseId} courseData={course} />
         </TabsContent>
+
         <TabsContent value="student-reports">
           <StudentReportsTab courseId={courseId} courseData={course} />
         </TabsContent>
@@ -329,6 +260,4 @@ export default function ManageCoursePage() {
       </Tabs>
     </div>
   );
-};
-
-export default ManageCoursePage;
+}

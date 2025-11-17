@@ -462,14 +462,14 @@ export function SectionManagement({ user }: SectionManagementProps) {
                           <div className="text-sm text-muted-foreground">{student.email}</div>
                           <div>
                             <Select
-                              value={student.sectionId || 'unassigned'}
-                              onValueChange={(value) => handleAssignStudentToSection(student.id, value === 'unassigned' ? null : value)}
+                              value={student.sectionId || ''}
+                              onValueChange={(value) => handleAssignStudentToSection(student.id, value || null)}
                             >
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select section" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                <SelectItem value="">Unassigned</SelectItem>
                                 {sections.map((section) => (
                                   <SelectItem key={section.id} value={section.id}>
                                     Section {section.name}
