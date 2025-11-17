@@ -248,13 +248,16 @@ export function SectionManagement({ user }: SectionManagementProps) {
   };
 
   const handleAssignStudentToSection = async (studentId: string, sectionId: string | null) => {
+    // Convert "unassigned" string to null for the API
+    const apiSectionId = sectionId === 'unassigned' ? null : sectionId;
+    
     try {
       const response = await fetch(`/api/students/${studentId}/section`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sectionId }),
+        body: JSON.stringify({ sectionId: apiSectionId }),
       });
 
       if (response.ok) {
@@ -462,14 +465,14 @@ export function SectionManagement({ user }: SectionManagementProps) {
                           <div className="text-sm text-muted-foreground">{student.email}</div>
                           <div>
                             <Select
-                              value={student.sectionId || ''}
-                              onValueChange={(value) => handleAssignStudentToSection(student.id, value || null)}
+                              value={student.sectionId || 'unassigned'}
+                              onValueChange={(value) => handleAssignStudentToSection(student.id, value === 'unassigned' ? null : value)}
                             >
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select section" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Unassigned</SelectItem>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
                                 {sections.map((section) => (
                                   <SelectItem key={section.id} value={section.id}>
                                     Section {section.name}

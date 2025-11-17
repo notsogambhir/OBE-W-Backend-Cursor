@@ -39,11 +39,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-local-*
-.claude
-.z-ai-config
-dev.log
-test
-prompt
-
-server.log

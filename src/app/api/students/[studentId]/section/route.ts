@@ -5,10 +5,18 @@ import { verifyToken } from '@/lib/auth';
 // PUT /api/students/[studentId]/section - Assign student to a section
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { studentId: string } }
+  { params }: { params: Promise<{ studentId: string }> }
 ) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
+    const resolvedParams = await params;
+    const studentId = resolvedParams.studentId;
+
+    // Try to get token from Authorization header first, then fallback to cookie
+  let token = request.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) {
+    token = request.cookies.get('auth-token')?.value;
+  }
+  
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -31,7 +39,7 @@ export async function PUT(
 
     // Get the student to verify they exist and get their batch info
     const student = await db.user.findUnique({
-      where: { id: params.studentId },
+      where: { id: studentId },
       include: {
         batch: {
           include: {
@@ -82,7 +90,7 @@ export async function PUT(
 
     // Update the student's section assignment
     const updatedStudent = await db.user.update({
-      where: { id: params.studentId },
+      where: { id: studentId },
       data: { sectionId },
       include: {
         section: true,

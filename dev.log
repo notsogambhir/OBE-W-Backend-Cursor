@@ -1,0 +1,1091 @@
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): server.ts src/**/*[39m
+[33m[nodemon] watching extensions: ts,tsx,js,jsx[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+ ○ Compiling / ...
+ GET / 200 in 3.6s (compile: 3.2s, render: 394ms)
+ GET / 200 in 47ms (compile: 4ms, render: 43ms)
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: undefined
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 771ms (compile: 566ms, render: 205ms)
+ GET / 200 in 179ms (compile: 10ms, render: 169ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 147ms (compile: 136ms, render: 12ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 45ms (compile: 3ms, render: 42ms)
+ GET / 200 in 46ms (compile: 3ms, render: 43ms)
+ GET / 200 in 41ms (compile: 3ms, render: 37ms)
+ GET / 200 in 53ms (compile: 4ms, render: 49ms)
+ GET / 200 in 41ms (compile: 3ms, render: 37ms)
+ GET / 200 in 51ms (compile: 4ms, render: 47ms)
+ GET / 200 in 47ms (compile: 3ms, render: 44ms)
+ GET / 200 in 42ms (compile: 3ms, render: 39ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 17ms (compile: 8ms, render: 9ms)
+Auth /me endpoint called
+Token present: true
+User from token in /api/auth/me: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: null
+}
+Returning user data from /api/auth/me
+ GET /api/auth/me 200 in 156ms (compile: 149ms, render: 7ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE (`main`.`programs`.`collegeId` = ? AND `main`.`programs`.`isActive` = ?) ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 2 programs
+ GET /api/programs?collegeId=cmi36bwzz0000m0r7mwmjcb8y 200 in 137ms (compile: 126ms, render: 11ms)
+ GET /students 200 in 1458ms (compile: 1429ms, render: 29ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 4 programs
+ GET /api/programs 200 in 10ms (compile: 3ms, render: 7ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 4 programs
+ GET /api/programs 200 in 9ms (compile: 2ms, render: 7ms)
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt`, COALESCE(`aggr_selection_0_Course`.`_aggr_count_courses`, 0) AS `_aggr_count_courses`, COALESCE(`aggr_selection_1_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`batches` LEFT JOIN (SELECT `main`.`courses`.`batchId`, COUNT(*) AS `_aggr_count_courses` FROM `main`.`courses` WHERE 1=1 GROUP BY `main`.`courses`.`batchId`) AS `aggr_selection_0_Course` ON (`main`.`batches`.`id` = `aggr_selection_0_Course`.`batchId`) LEFT JOIN (SELECT `main`.`users`.`batchId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`batchId`) AS `aggr_selection_1_User` ON (`main`.`batches`.`id` = `aggr_selection_1_User`.`batchId`) WHERE (`main`.`batches`.`programId` = ? AND `main`.`batches`.`isActive` = ?) ORDER BY `main`.`batches`.`startYear` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+ GET /api/batches?programId=cmi36bx020008m0r79qnrl0eh 200 in 166ms (compile: 152ms, render: 14ms)
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt`, COALESCE(`aggr_selection_0_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`sections` LEFT JOIN (SELECT `main`.`users`.`sectionId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`sectionId`) AS `aggr_selection_0_User` ON (`main`.`sections`.`id` = `aggr_selection_0_User`.`sectionId`) WHERE (`main`.`sections`.`batchId` = ? AND `main`.`sections`.`isActive` = ?) ORDER BY `main`.`sections`.`name` ASC LIMIT ? OFFSET ?
+ GET /api/sections?batchId=cmi36bx08000im0r7hi4xlfu9 200 in 186ms (compile: 173ms, render: 13ms)
+User authenticated via cookie: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  role: 'ADMIN'
+}
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt`, COALESCE(`aggr_selection_0_Enrollment`.`_aggr_count_enrollments`, 0) AS `_aggr_count_enrollments` FROM `main`.`users` LEFT JOIN (SELECT `main`.`enrollments`.`studentId`, COUNT(*) AS `_aggr_count_enrollments` FROM `main`.`enrollments` WHERE 1=1 GROUP BY `main`.`enrollments`.`studentId`) AS `aggr_selection_0_Enrollment` ON (`main`.`users`.`id` = `aggr_selection_0_Enrollment`.`studentId`) WHERE (`main`.`users`.`role` = ? AND `main`.`users`.`isActive` = ? AND `main`.`users`.`batchId` = ?) ORDER BY `main`.`users`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`programId` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name` FROM `main`.`sections` WHERE `main`.`sections`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+ GET /api/students?batchId=cmi36bx08000im0r7hi4xlfu9 200 in 481ms (compile: 469ms, render: 12ms)
+ ⚠ Cross origin request detected from preview-chat-11de5c95-59bd-4467-ad78-7668d4c5a453.space.z.ai to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /students 200 in 185ms (compile: 4ms, render: 181ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 12ms (compile: 4ms, render: 7ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Auth /me endpoint called
+Token present: true
+User from token in /api/auth/me: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: null
+}
+Returning user data from /api/auth/me
+ GET /api/auth/me 200 in 10ms (compile: 5ms, render: 5ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE (`main`.`programs`.`collegeId` = ? AND `main`.`programs`.`isActive` = ?) ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 2 programs
+ GET /api/programs?collegeId=cmi36bwzz0000m0r7mwmjcb8y 200 in 9ms (compile: 2ms, render: 7ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 4 programs
+ GET /api/programs 200 in 10ms (compile: 3ms, render: 8ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 4 programs
+ GET /api/programs 200 in 8ms (compile: 2ms, render: 6ms)
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt`, COALESCE(`aggr_selection_0_Course`.`_aggr_count_courses`, 0) AS `_aggr_count_courses`, COALESCE(`aggr_selection_1_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`batches` LEFT JOIN (SELECT `main`.`courses`.`batchId`, COUNT(*) AS `_aggr_count_courses` FROM `main`.`courses` WHERE 1=1 GROUP BY `main`.`courses`.`batchId`) AS `aggr_selection_0_Course` ON (`main`.`batches`.`id` = `aggr_selection_0_Course`.`batchId`) LEFT JOIN (SELECT `main`.`users`.`batchId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`batchId`) AS `aggr_selection_1_User` ON (`main`.`batches`.`id` = `aggr_selection_1_User`.`batchId`) WHERE (`main`.`batches`.`programId` = ? AND `main`.`batches`.`isActive` = ?) ORDER BY `main`.`batches`.`startYear` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+ GET /api/batches?programId=cmi36bx020008m0r79qnrl0eh 200 in 9ms (compile: 2ms, render: 6ms)
+User authenticated via cookie: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  role: 'ADMIN'
+}
+ GET /api/students?batchId=cmi36bx08000im0r7hi4xlfu9 200 in 13ms (compile: 2ms, render: 10ms)
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt`, COALESCE(`aggr_selection_0_Enrollment`.`_aggr_count_enrollments`, 0) AS `_aggr_count_enrollments` FROM `main`.`users` LEFT JOIN (SELECT `main`.`enrollments`.`studentId`, COUNT(*) AS `_aggr_count_enrollments` FROM `main`.`enrollments` WHERE 1=1 GROUP BY `main`.`enrollments`.`studentId`) AS `aggr_selection_0_Enrollment` ON (`main`.`users`.`id` = `aggr_selection_0_Enrollment`.`studentId`) WHERE (`main`.`users`.`role` = ? AND `main`.`users`.`isActive` = ? AND `main`.`users`.`batchId` = ?) ORDER BY `main`.`users`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`programId` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name` FROM `main`.`sections` WHERE `main`.`sections`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt`, COALESCE(`aggr_selection_0_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`sections` LEFT JOIN (SELECT `main`.`users`.`sectionId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`sectionId`) AS `aggr_selection_0_User` ON (`main`.`sections`.`id` = `aggr_selection_0_User`.`sectionId`) WHERE (`main`.`sections`.`batchId` = ? AND `main`.`sections`.`isActive` = ?) ORDER BY `main`.`sections`.`name` ASC LIMIT ? OFFSET ?
+ GET /api/sections?batchId=cmi36bx08000im0r7hi4xlfu9 200 in 9ms (compile: 2ms, render: 6ms)
+ GET /admin 200 in 621ms (compile: 578ms, render: 42ms)
+ GET /courses 200 in 725ms (compile: 694ms, render: 31ms)
+ GET /students 200 in 40ms (compile: 3ms, render: 37ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 4 programs
+ GET /api/programs 200 in 11ms (compile: 2ms, render: 9ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 4 programs
+ GET /api/programs 200 in 9ms (compile: 2ms, render: 7ms)
+ GET /students 200 in 53ms (compile: 3ms, render: 50ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+Auth /me endpoint called
+Token present: true
+User from token in /api/auth/me: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: null
+}
+Returning user data from /api/auth/me
+ GET /api/auth/me 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 4 programs
+ GET /api/programs 200 in 8ms (compile: 2ms, render: 6ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE (`main`.`programs`.`collegeId` = ? AND `main`.`programs`.`isActive` = ?) ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 2 programs
+ GET /api/programs?collegeId=cmi36bwzz0000m0r7mwmjcb8y 200 in 14ms (compile: 3ms, render: 11ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 4 programs
+ GET /api/programs 200 in 11ms (compile: 2ms, render: 8ms)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: undefined
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 813ms (compile: 657ms, render: 156ms)
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt`, COALESCE(`aggr_selection_0_Enrollment`.`_aggr_count_enrollments`, 0) AS `_aggr_count_enrollments` FROM `main`.`users` LEFT JOIN (SELECT `main`.`enrollments`.`studentId`, COUNT(*) AS `_aggr_count_enrollments` FROM `main`.`enrollments` WHERE 1=1 GROUP BY `main`.`enrollments`.`studentId`) AS `aggr_selection_0_Enrollment` ON (`main`.`users`.`id` = `aggr_selection_0_Enrollment`.`studentId`) WHERE (`main`.`users`.`role` = ? AND `main`.`users`.`isActive` = ? AND `main`.`users`.`batchId` = ?) ORDER BY `main`.`users`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`programId` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name` FROM `main`.`sections` WHERE `main`.`sections`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+ GET /api/students?batchId=cmi36bx08000cm0r7wr380n4n 200 in 479ms (compile: 457ms, render: 22ms)
+ GET / 200 in 1781ms (compile: 1356ms, render: 425ms)
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt`, COALESCE(`aggr_selection_0_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`sections` LEFT JOIN (SELECT `main`.`users`.`sectionId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`sectionId`) AS `aggr_selection_0_User` ON (`main`.`sections`.`id` = `aggr_selection_0_User`.`sectionId`) WHERE (`main`.`sections`.`batchId` = ? AND `main`.`sections`.`isActive` = ?) ORDER BY `main`.`sections`.`name` ASC LIMIT ? OFFSET ?
+ GET /api/sections?batchId=cmi36bx08000cm0r7wr380n4n 200 in 161ms (compile: 151ms, render: 10ms)
+ GET / 200 in 50ms (compile: 4ms, render: 46ms)
+ PUT /api/students/cmi36bx4r0048m0r7zjjerwsu/section 401 in 1065ms (compile: 1056ms, render: 9ms)
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: undefined
+prisma:query SELECT 1
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 110ms (compile: 3ms, render: 107ms)
+ PUT /api/students/cmi36bx4r0048m0r7zjjerwsu/section 401 in 18ms (compile: 13ms, render: 5ms)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: undefined
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 909ms (compile: 752ms, render: 157ms)
+ PUT /api/students/cmi36bx4r0048m0r7zjjerwsu/section 401 in 1393ms (compile: 1381ms, render: 12ms)
+ ○ Compiling /students ...
+ GET / 200 in 2.8s (compile: 2.2s, render: 623ms)
+ GET /students 200 in 4.4s (compile: 3.9s, render: 542ms)
+ GET / 200 in 61ms (compile: 4ms, render: 58ms)
+   Reload env: .env
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 174ms (compile: 156ms, render: 18ms)
+Auth /me endpoint called
+Token present: true
+User from token in /api/auth/me: null
+Token verification failed in /api/auth/me
+ GET /api/auth/me 401 in 183ms (compile: 173ms, render: 9ms)
+GET /api/programs called (OPTIMIZED)
+Found 2 programs
+ GET /api/programs?collegeId=cmi36bwzz0000m0r7mwmjcb8y 200 in 120ms (compile: 110ms, render: 10ms)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE (`main`.`programs`.`collegeId` = ? AND `main`.`programs`.`isActive` = ?) ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 13ms (compile: 4ms, render: 9ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 4ms, render: 7ms)
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: undefined
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 162ms (compile: 29ms, render: 133ms)
+ PUT /api/students/cmi36bx4r0048m0r7zjjerwsu/section 401 in 42ms (compile: 36ms, render: 6ms)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: undefined
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 827ms (compile: 649ms, render: 177ms)
+Token from cookie: undefined
+No token found
+ PUT /api/students/cmi36bx4r0048m0r7zjjerwsu/section 401 in 1085ms (compile: 1074ms, render: 12ms)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: undefined
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 881ms (compile: 695ms, render: 186ms)
+Token from header/cookie: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtaTM2Yng0NzAwMmttMHI3a2w3N3B2cTQiLCJlbWFpbCI6ImFkbWluQG9iZXBvcnRhbC5jb20iLCJuYW1lIjoiU3lzdGVtIEFkbWluaXN0cmF0b3IiLCJyb2xlIjoiQURNSU4iLCJjb2xsZWdlSWQiOiJjbWkzNmJ3enowMDAwbTByN213bWpjYjh5IiwicHJvZ3JhbUlkIjpudWxsLCJiYXRjaElkIjpudWxsLCJpYXQiOjE3NjMzODcxOTgsImV4cCI6MTc2Mzk5MTk5OH0.YC0dEBoA2OVbTbZ79o5ssj8CJ1F4_wKIhk8TPwNT6jc
+Verified user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: null,
+  batchId: null,
+  iat: 1763387198,
+  exp: 1763991998
+}
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt` FROM `main`.`sections` WHERE (`main`.`sections`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`users` SET `sectionId` = ?, `updatedAt` = ? WHERE (`main`.`users`.`id` = ? AND 1=1) RETURNING `id` AS `id`, `email` AS `email`, `studentId` AS `studentId`, `employeeId` AS `employeeId`, `password` AS `password`, `name` AS `name`, `role` AS `role`, `collegeId` AS `collegeId`, `programId` AS `programId`, `batchId` AS `batchId`, `sectionId` AS `sectionId`, `isActive` AS `isActive`, `createdAt` AS `createdAt`, `updatedAt` AS `updatedAt`
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE `main`.`users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt` FROM `main`.`sections` WHERE `main`.`sections`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query COMMIT
+ PUT /api/students/cmi36bx4r0048m0r7zjjerwsu/section 200 in 1062ms (compile: 1037ms, render: 25ms)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `npx tsx server.ts`[39m
+> Ready on http://127.0.0.1:3000
+ GET / 200 in 3.6s (compile: 3.2s, render: 370ms)
+ GET / 200 in 66ms (compile: 7ms, render: 60ms)
+ GET /students 200 in 1584ms (compile: 1370ms, render: 214ms)
+GET /api/colleges called (OPTIMIZED)
+Auth /me endpoint called
+Token present: true
+User from token in /api/auth/me: null
+Token verification failed in /api/auth/me
+ GET /api/auth/me 401 in 420ms (compile: 406ms, render: 14ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 530ms (compile: 411ms, render: 119ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 10ms (compile: 3ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 3ms, render: 7ms)
+ GET /students 200 in 85ms (compile: 6ms, render: 79ms)
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: 
+prisma:query SELECT 1
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication failed for: admin@obeportal.com
+ POST /api/auth/login 401 in 313ms (compile: 181ms, render: 132ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 12ms (compile: 4ms, render: 8ms)
+Auth /me endpoint called
+Token present: true
+User from token in /api/auth/me: null
+Token verification failed in /api/auth/me
+ GET /api/auth/me 401 in 12ms (compile: 4ms, render: 8ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 10ms (compile: 2ms, render: 7ms)
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: 
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication failed for: admin@obeportal.com
+ POST /api/auth/login 401 in 110ms (compile: 5ms, render: 105ms)
+ ⚠ Cross origin request detected from preview-chat-11de5c95-59bd-4467-ad78-7668d4c5a453.space.z.ai to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+=== LOGIN ATTEMPT ===
+Email: admin@obeportal.com
+College ID: cmi36bwzz0001m0r7dxhqnmve
+prisma:query SELECT 1
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 114ms (compile: 2ms, render: 112ms)
+GET /api/programs called (OPTIMIZED)
+Found 4 programs
+ GET /api/programs 200 in 123ms (compile: 114ms, render: 8ms)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Auth /me endpoint called
+Token present: true
+User from token in /api/auth/me: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  name: 'System Administrator',
+  role: 'ADMIN',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: null
+}
+Returning user data from /api/auth/me
+ GET /api/auth/me 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE (`main`.`programs`.`collegeId` = ? AND `main`.`programs`.`isActive` = ?) ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 2 programs
+ GET /api/programs?collegeId=cmi36bwzz0000m0r7mwmjcb8y 200 in 9ms (compile: 3ms, render: 6ms)
+GET /api/programs called (OPTIMIZED)
+Found 4 programs
+ GET /api/programs 200 in 32ms (compile: 2ms, render: 30ms)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE `main`.`programs`.`isActive` = ? ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt`, COALESCE(`aggr_selection_0_Course`.`_aggr_count_courses`, 0) AS `_aggr_count_courses`, COALESCE(`aggr_selection_1_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`batches` LEFT JOIN (SELECT `main`.`courses`.`batchId`, COUNT(*) AS `_aggr_count_courses` FROM `main`.`courses` WHERE 1=1 GROUP BY `main`.`courses`.`batchId`) AS `aggr_selection_0_Course` ON (`main`.`batches`.`id` = `aggr_selection_0_Course`.`batchId`) LEFT JOIN (SELECT `main`.`users`.`batchId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`batchId`) AS `aggr_selection_1_User` ON (`main`.`batches`.`id` = `aggr_selection_1_User`.`batchId`) WHERE (`main`.`batches`.`programId` = ? AND `main`.`batches`.`isActive` = ?) ORDER BY `main`.`batches`.`startYear` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+ GET /api/batches?programId=cmi36bx020008m0r79qnrl0eh 200 in 158ms (compile: 147ms, render: 11ms)
+User authenticated via cookie: {
+  id: 'cmi36bx47002km0r7kl77pvq4',
+  email: 'admin@obeportal.com',
+  role: 'ADMIN'
+}
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt`, COALESCE(`aggr_selection_0_Enrollment`.`_aggr_count_enrollments`, 0) AS `_aggr_count_enrollments` FROM `main`.`users` LEFT JOIN (SELECT `main`.`enrollments`.`studentId`, COUNT(*) AS `_aggr_count_enrollments` FROM `main`.`enrollments` WHERE 1=1 GROUP BY `main`.`enrollments`.`studentId`) AS `aggr_selection_0_Enrollment` ON (`main`.`users`.`id` = `aggr_selection_0_Enrollment`.`studentId`) WHERE (`main`.`users`.`role` = ? AND `main`.`users`.`isActive` = ? AND `main`.`users`.`batchId` = ?) ORDER BY `main`.`users`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`programId` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name` FROM `main`.`sections` WHERE `main`.`sections`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+ GET /api/students?batchId=cmi36bx08000im0r7hi4xlfu9 200 in 462ms (compile: 452ms, render: 10ms)
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt`, COALESCE(`aggr_selection_0_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`sections` LEFT JOIN (SELECT `main`.`users`.`sectionId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`sectionId`) AS `aggr_selection_0_User` ON (`main`.`sections`.`id` = `aggr_selection_0_User`.`sectionId`) WHERE (`main`.`sections`.`batchId` = ? AND `main`.`sections`.`isActive` = ?) ORDER BY `main`.`sections`.`name` ASC LIMIT ? OFFSET ?
+ GET /api/sections?batchId=cmi36bx08000im0r7hi4xlfu9 200 in 144ms (compile: 135ms, render: 9ms)
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt` FROM `main`.`sections` WHERE (`main`.`sections`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`users` SET `sectionId` = ?, `updatedAt` = ? WHERE (`main`.`users`.`id` = ? AND 1=1) RETURNING `id` AS `id`, `email` AS `email`, `studentId` AS `studentId`, `employeeId` AS `employeeId`, `password` AS `password`, `name` AS `name`, `role` AS `role`, `collegeId` AS `collegeId`, `programId` AS `programId`, `batchId` AS `batchId`, `sectionId` AS `sectionId`, `isActive` AS `isActive`, `createdAt` AS `createdAt`, `updatedAt` AS `updatedAt`
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE `main`.`users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt` FROM `main`.`sections` WHERE `main`.`sections`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query COMMIT
+ PUT /api/students/cmi36bx4j003em0r7st40bztw/section 200 in 1087ms (compile: 1062ms, render: 25ms)
+ POST /api/auth/logout 200 in 126ms (compile: 120ms, render: 6ms)
+ GET / 200 in 25ms (compile: 4ms, render: 22ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 12ms (compile: 5ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 10ms (compile: 3ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 5ms, render: 7ms)
+=== LOGIN ATTEMPT ===
+Email: program2@obeportal.com
+College ID: cmi36bwzz0001m0r7dxhqnmve
+Authentication failed for: program2@obeportal.com
+ POST /api/auth/login 401 in 10ms (compile: 2ms, render: 8ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+=== LOGIN ATTEMPT ===
+Email: program1@obeportal.com
+College ID: cmi36bwzz0001m0r7dxhqnmve
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+Authentication failed for: program1@obeportal.com
+ POST /api/auth/login 401 in 10ms (compile: 2ms, render: 7ms)
+=== LOGIN ATTEMPT ===
+Email: program1@obeportal.com
+College ID: cmi36bwzz0001m0r7dxhqnmve
+prisma:query SELECT 1
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+Authentication failed for: program1@obeportal.com
+ POST /api/auth/login 401 in 9ms (compile: 2ms, render: 7ms)
+ GET / 200 in 47ms (compile: 3ms, render: 44ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 10ms (compile: 3ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 13ms (compile: 7ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 4ms, render: 5ms)
+=== LOGIN ATTEMPT ===
+Email: eee@obeportal.com
+College ID: 
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+Authentication failed for: eee@obeportal.com
+ POST /api/auth/login 401 in 13ms (compile: 7ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+=== LOGIN ATTEMPT ===
+Email: cse@obeportal.com
+College ID: 
+prisma:query SELECT 1
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication failed for: cse@obeportal.com
+ POST /api/auth/login 401 in 106ms (compile: 2ms, render: 104ms)
+=== LOGIN ATTEMPT ===
+Email: cse@obeportal.com
+College ID: cmi36bwzz0000m0r7mwmjcb8y
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+Authentication successful for user: {
+  id: 'cmi36bx47002jm0r7lcl3f1u4',
+  email: 'cse@obeportal.com',
+  name: 'CSE Department Head',
+  role: 'DEPARTMENT',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: undefined
+}
+Generated token (first 20 chars): eyJhbGciOiJIUzI1NiIs...
+Cookie set in response
+About to return response...
+ POST /api/auth/login 200 in 111ms (compile: 3ms, render: 108ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE (`main`.`programs`.`collegeId` = ? AND `main`.`programs`.`isActive` = ?) ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 2 programs
+ GET /api/programs?collegeId=cmi36bwzz0000m0r7mwmjcb8y 200 in 11ms (compile: 5ms, render: 6ms)
+Auth /me endpoint called
+Token present: true
+User from token in /api/auth/me: {
+  id: 'cmi36bx47002jm0r7lcl3f1u4',
+  email: 'cse@obeportal.com',
+  name: 'CSE Department Head',
+  role: 'DEPARTMENT',
+  collegeId: 'cmi36bwzz0000m0r7mwmjcb8y',
+  programId: null
+}
+Returning user data from /api/auth/me
+ GET /api/auth/me 200 in 11ms (compile: 4ms, render: 7ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt`, COALESCE(`aggr_selection_0_Course`.`_aggr_count_courses`, 0) AS `_aggr_count_courses`, COALESCE(`aggr_selection_1_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`batches` LEFT JOIN (SELECT `main`.`courses`.`batchId`, COUNT(*) AS `_aggr_count_courses` FROM `main`.`courses` WHERE 1=1 GROUP BY `main`.`courses`.`batchId`) AS `aggr_selection_0_Course` ON (`main`.`batches`.`id` = `aggr_selection_0_Course`.`batchId`) LEFT JOIN (SELECT `main`.`users`.`batchId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`batchId`) AS `aggr_selection_1_User` ON (`main`.`batches`.`id` = `aggr_selection_1_User`.`batchId`) WHERE (`main`.`batches`.`programId` = ? AND `main`.`batches`.`isActive` = ?) ORDER BY `main`.`batches`.`startYear` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+ GET /api/batches?programId=cmi36bx020008m0r79qnrl0eh 200 in 11ms (compile: 2ms, render: 9ms)
+ GET /students 200 in 33ms (compile: 3ms, render: 29ms)
+GET /api/programs called (OPTIMIZED)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE (`main`.`programs`.`collegeId` = ? AND `main`.`programs`.`isActive` = ?) ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+Found 2 programs
+ GET /api/programs?collegeId=cmi36bwzz0000m0r7mwmjcb8y 200 in 9ms (compile: 3ms, render: 6ms)
+GET /api/programs called (OPTIMIZED)
+Found 2 programs
+ GET /api/programs?collegeId=cmi36bwzz0000m0r7mwmjcb8y 200 in 9ms (compile: 2ms, render: 7ms)
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`duration`, `main`.`programs`.`collegeId` FROM `main`.`programs` WHERE (`main`.`programs`.`collegeId` = ? AND `main`.`programs`.`isActive` = ?) ORDER BY `main`.`programs`.`name` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt`, COALESCE(`aggr_selection_0_Course`.`_aggr_count_courses`, 0) AS `_aggr_count_courses`, COALESCE(`aggr_selection_1_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`batches` LEFT JOIN (SELECT `main`.`courses`.`batchId`, COUNT(*) AS `_aggr_count_courses` FROM `main`.`courses` WHERE 1=1 GROUP BY `main`.`courses`.`batchId`) AS `aggr_selection_0_Course` ON (`main`.`batches`.`id` = `aggr_selection_0_Course`.`batchId`) LEFT JOIN (SELECT `main`.`users`.`batchId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`batchId`) AS `aggr_selection_1_User` ON (`main`.`batches`.`id` = `aggr_selection_1_User`.`batchId`) WHERE (`main`.`batches`.`programId` = ? AND `main`.`batches`.`isActive` = ?) ORDER BY `main`.`batches`.`startYear` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+ GET /api/batches?programId=cmi36bx020008m0r79qnrl0eh 200 in 12ms (compile: 2ms, render: 10ms)
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE (`main`.`batches`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt`, COALESCE(`aggr_selection_0_User`.`_aggr_count_students`, 0) AS `_aggr_count_students` FROM `main`.`sections` LEFT JOIN (SELECT `main`.`users`.`sectionId`, COUNT(*) AS `_aggr_count_students` FROM `main`.`users` WHERE 1=1 GROUP BY `main`.`users`.`sectionId`) AS `aggr_selection_0_User` ON (`main`.`sections`.`id` = `aggr_selection_0_User`.`sectionId`) WHERE (`main`.`sections`.`batchId` = ? AND `main`.`sections`.`isActive` = ?) ORDER BY `main`.`sections`.`name` ASC LIMIT ? OFFSET ?
+ GET /api/sections?batchId=cmi36bx08000im0r7hi4xlfu9 200 in 10ms (compile: 2ms, render: 8ms)
+User authenticated via cookie: {
+  id: 'cmi36bx47002jm0r7lcl3f1u4',
+  email: 'cse@obeportal.com',
+  role: 'DEPARTMENT'
+}
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt`, COALESCE(`aggr_selection_0_Enrollment`.`_aggr_count_enrollments`, 0) AS `_aggr_count_enrollments` FROM `main`.`users` LEFT JOIN (SELECT `main`.`enrollments`.`studentId`, COUNT(*) AS `_aggr_count_enrollments` FROM `main`.`enrollments` WHERE 1=1 GROUP BY `main`.`enrollments`.`studentId`) AS `aggr_selection_0_Enrollment` ON (`main`.`users`.`id` = `aggr_selection_0_Enrollment`.`studentId`) WHERE (`main`.`users`.`role` = ? AND `main`.`users`.`isActive` = ? AND `main`.`users`.`batchId` = ?) ORDER BY `main`.`users`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`programId` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name` FROM `main`.`sections` WHERE `main`.`sections`.`id` IN (?,?,?) LIMIT ? OFFSET ?
+ GET /api/students?batchId=cmi36bx08000im0r7hi4xlfu9 200 in 12ms (compile: 4ms, render: 7ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code`, `main`.`colleges`.`description`, `main`.`colleges`.`isActive`, `main`.`colleges`.`createdAt`, `main`.`colleges`.`updatedAt` FROM `main`.`colleges` WHERE `main`.`colleges`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt` FROM `main`.`sections` WHERE (`main`.`sections`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`users` SET `sectionId` = ?, `updatedAt` = ? WHERE (`main`.`users`.`id` = ? AND 1=1) RETURNING `id` AS `id`, `email` AS `email`, `studentId` AS `studentId`, `employeeId` AS `employeeId`, `password` AS `password`, `name` AS `name`, `role` AS `role`, `collegeId` AS `collegeId`, `programId` AS `programId`, `batchId` AS `batchId`, `sectionId` AS `sectionId`, `isActive` AS `isActive`, `createdAt` AS `createdAt`, `updatedAt` AS `updatedAt`
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE `main`.`users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`sections`.`id`, `main`.`sections`.`name`, `main`.`sections`.`batchId`, `main`.`sections`.`isActive`, `main`.`sections`.`createdAt`, `main`.`sections`.`updatedAt` FROM `main`.`sections` WHERE `main`.`sections`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`batches`.`id`, `main`.`batches`.`name`, `main`.`batches`.`programId`, `main`.`batches`.`startYear`, `main`.`batches`.`endYear`, `main`.`batches`.`isActive`, `main`.`batches`.`createdAt`, `main`.`batches`.`updatedAt` FROM `main`.`batches` WHERE `main`.`batches`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`programs`.`id`, `main`.`programs`.`name`, `main`.`programs`.`code`, `main`.`programs`.`collegeId`, `main`.`programs`.`duration`, `main`.`programs`.`description`, `main`.`programs`.`isActive`, `main`.`programs`.`createdAt`, `main`.`programs`.`updatedAt` FROM `main`.`programs` WHERE `main`.`programs`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query COMMIT
+ PUT /api/students/cmi36bx4j003em0r7st40bztw/section 200 in 27ms (compile: 13ms, render: 14ms)
+ POST /api/auth/logout 200 in 6ms (compile: 2ms, render: 4ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 3ms, render: 9ms)
+ GET / 200 in 29ms (compile: 4ms, render: 25ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 4ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 5ms)
+=== LOGIN ATTEMPT ===
+Email: teacher1@obeportal.com
+College ID: 
+Authentication failed for: teacher1@obeportal.com
+ POST /api/auth/login 401 in 9ms (compile: 2ms, render: 7ms)
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+=== LOGIN ATTEMPT ===
+Email: teacher1@obeportal.com
+College ID: cmi36bwzz0000m0r7mwmjcb8y
+prisma:query SELECT 1
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+Authentication failed for: teacher1@obeportal.com
+ POST /api/auth/login 401 in 8ms (compile: 2ms, render: 6ms)
+=== LOGIN ATTEMPT ===
+Email: teacher2@obeportal.com
+College ID: cmi36bwzz0000m0r7mwmjcb8y
+prisma:query SELECT `main`.`users`.`id`, `main`.`users`.`email`, `main`.`users`.`studentId`, `main`.`users`.`employeeId`, `main`.`users`.`password`, `main`.`users`.`name`, `main`.`users`.`role`, `main`.`users`.`collegeId`, `main`.`users`.`programId`, `main`.`users`.`batchId`, `main`.`users`.`sectionId`, `main`.`users`.`isActive`, `main`.`users`.`createdAt`, `main`.`users`.`updatedAt` FROM `main`.`users` WHERE (`main`.`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+Authentication failed for: teacher2@obeportal.com
+ POST /api/auth/login 401 in 15ms (compile: 3ms, render: 12ms)
+ GET / 200 in 49ms (compile: 4ms, render: 45ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 4ms, render: 6ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 6ms (compile: 2ms, render: 4ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 55ms (compile: 5ms, render: 50ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 8ms (compile: 3ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 6ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 3ms, render: 8ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+ GET / 200 in 48ms (compile: 3ms, render: 45ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 8ms (compile: 3ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 49ms (compile: 3ms, render: 46ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 8ms (compile: 3ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 10ms (compile: 3ms, render: 7ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 3ms, render: 8ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 45ms (compile: 3ms, render: 42ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 9ms (compile: 5ms, render: 4ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 10ms (compile: 2ms, render: 8ms)
+ GET / 200 in 40ms (compile: 3ms, render: 37ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 2ms, render: 9ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 6ms (compile: 1859µs, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 15ms (compile: 6ms, render: 8ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 46ms (compile: 4ms, render: 41ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 8ms (compile: 2ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+ GET / 200 in 43ms (compile: 3ms, render: 40ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 44ms (compile: 3ms, render: 41ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 9ms (compile: 2ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 10ms (compile: 2ms, render: 8ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+ GET / 200 in 43ms (compile: 4ms, render: 39ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 6ms (compile: 3ms, render: 3ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 5ms)
+ GET / 200 in 43ms (compile: 3ms, render: 41ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 3ms, render: 6ms)
+ GET / 200 in 44ms (compile: 3ms, render: 41ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 19ms (compile: 2ms, render: 17ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 3ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+ GET / 200 in 40ms (compile: 3ms, render: 37ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 3ms, render: 7ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 6ms (compile: 1679µs, render: 4ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 10ms (compile: 2ms, render: 8ms)
+ GET / 200 in 41ms (compile: 3ms, render: 39ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+Found 3 colleges
+ GET /api/colleges 200 in 15ms (compile: 5ms, render: 10ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 10ms (compile: 4ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 3ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+ GET / 200 in 50ms (compile: 3ms, render: 47ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 6ms (compile: 2ms, render: 4ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 1955µs, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+ GET / 200 in 48ms (compile: 3ms, render: 46ms)
+GET /api/colleges called (OPTIMIZED)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 10ms (compile: 6ms, render: 4ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 13ms (compile: 3ms, render: 10ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 3ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+ GET / 200 in 42ms (compile: 3ms, render: 40ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 8ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 1849µs, render: 5ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 39ms (compile: 3ms, render: 37ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 12ms (compile: 6ms, render: 6ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 5ms (compile: 2ms, render: 3ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 2ms, render: 9ms)
+ GET / 200 in 41ms (compile: 3ms, render: 38ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 6ms (compile: 2ms, render: 4ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 3ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 3ms, render: 6ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 46ms (compile: 4ms, render: 43ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 3ms, render: 6ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 8ms (compile: 5ms, render: 3ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 9ms (compile: 2ms, render: 7ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 11ms (compile: 3ms, render: 8ms)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+ GET / 200 in 47ms (compile: 3ms, render: 44ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 6ms (compile: 3ms, render: 3ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 2ms, render: 6ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+ GET / 200 in 44ms (compile: 3ms, render: 42ms)
+Auth /me endpoint called
+Token present: false
+No token found in /api/auth/me
+ GET /api/auth/me 401 in 8ms (compile: 3ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+Found 3 colleges
+ GET /api/colleges 200 in 8ms (compile: 1935µs, render: 6ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
+GET /api/colleges called (OPTIMIZED)
+prisma:query SELECT `main`.`colleges`.`id`, `main`.`colleges`.`name`, `main`.`colleges`.`code` FROM `main`.`colleges` WHERE `main`.`colleges`.`isActive` = ? ORDER BY `main`.`colleges`.`name` ASC LIMIT ? OFFSET ?
+Found 3 colleges
+ GET /api/colleges 200 in 7ms (compile: 2ms, render: 5ms)
