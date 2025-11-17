@@ -31,17 +31,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update user's batch
-    await db.user.update({
+    console.log('Updating batch for user:', {
+      userId: user.id,
+      currentBatchId: user.batchId,
+      newBatchId: batchId
+    });
+
+    // Validate that the batch exists
+    const batch = await db.batch.findUnique({
+      where: { id: batchId }
+    });
+
+    if (!batch) {
+      console.error('Batch not found:', batchId);
+      return NextResponse.json(
+        { error: 'Batch not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update user's batch and clear related fields
+    const updatedUser = await db.user.update({
       where: { id: user.id },
-      data: { batchId },
+      data: { 
+        batchId,
+        // Clear section when changing batch to maintain data integrity
+        sectionId: null,
+        // Update programId to match the new batch's program
+        programId: batch.programId
+      }
+    });
+
+    console.log('Successfully updated user batch:', {
+      userId: user.id,
+      oldBatchId: user.batchId,
+      newBatchId: batchId,
+      updatedProgramId: batch.programId
     });
     
-    return NextResponse.json({ success: true, batchId });
+    return NextResponse.json({ 
+      success: true, 
+      batchId,
+      programId: batch.programId,
+      message: 'Batch updated successfully'
+    });
   } catch (error) {
-    console.error('Error updating batch:', error);
+    console.error('Error updating batch:', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

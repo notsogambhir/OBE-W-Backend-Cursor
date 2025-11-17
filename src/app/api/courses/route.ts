@@ -33,6 +33,13 @@ export async function GET(request: NextRequest) {
         include: {
           batch: {
             select: { name: true, startYear: true, endYear: true }
+          },
+          _count: {
+            select: {
+              enrollments: true,
+              courseOutcomes: true,
+              assessments: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -54,6 +61,13 @@ export async function GET(request: NextRequest) {
         include: {
           batch: {
             select: { name: true, startYear: true, endYear: true }
+          },
+          _count: {
+            select: {
+              enrollments: true,
+              courseOutcomes: true,
+              assessments: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -72,6 +86,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  enrollments: true,
+                  courseOutcomes: true,
+                  assessments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -92,6 +113,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  enrollments: true,
+                  courseOutcomes: true,
+                  assessments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -112,6 +140,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  enrollments: true,
+                  courseOutcomes: true,
+                  assessments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -128,6 +163,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  enrollments: true,
+                  courseOutcomes: true,
+                  assessments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -144,6 +186,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  enrollments: true,
+                  courseOutcomes: true,
+                  assessments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -155,7 +204,10 @@ export async function GET(request: NextRequest) {
       console.log(`Returning ${courses.length} courses`);
     }
     
-    return NextResponse.json(courses);
+      return NextResponse.json(courses.map(course => ({
+        ...course,
+        semester: '1st' // Default semester since it's not in schema
+      })));
     
   } catch (error) {
     console.error('Error fetching courses:', error);

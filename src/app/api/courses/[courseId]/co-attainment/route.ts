@@ -14,6 +14,7 @@ export async function GET(
     
     const academicYear = searchParams.get('academicYear') || undefined;
     const coId = searchParams.get('coId') || undefined;
+    const sectionId = searchParams.get('sectionId') || undefined;
 
     if (!courseId) {
       return NextResponse.json(
@@ -41,13 +42,15 @@ export async function GET(
       result = await COAttainmentService.calculateCOAttainment(
         courseId,
         coId,
-        academicYear
+        academicYear,
+        sectionId
       );
     } else {
       // Calculate attainment for all COs in course
       result = await COAttainmentService.calculateCourseCOAttainment(
         courseId,
-        academicYear
+        academicYear,
+        sectionId
       );
     }
 
