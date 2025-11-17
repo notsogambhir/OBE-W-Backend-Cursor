@@ -72,6 +72,7 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
       fetchAttainments();
     }
     fetchCourseSettings();
+    fetchSections();
     
     // Listen for CO updates
     const handleCOUpdate = () => {
@@ -103,61 +104,21 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
 
   const fetchAttainments = async () => {
     try {
-      // Mock attainment data
-      const mockAttainments: COAttainment[] = [
-        {
-          coId: '1',
-          coCode: 'CO1',
-          coDescription: 'Understand fundamental programming concepts',
-          targetPercentage: 60,
-          attainedPercentage: 75.5,
-          studentsAttained: 45,
-          totalStudents: 60,
-          attainmentLevel: 2,
-        },
-        {
-          coId: '2',
-          coCode: 'CO2',
-          coDescription: 'Design and implement algorithms',
-          targetPercentage: 60,
-          attainedPercentage: 68.3,
-          studentsAttained: 40,
-          totalStudents: 58,
-          attainmentLevel: 2,
-        },
-        {
-          coId: '3',
-          coCode: 'CO3',
-          coDescription: 'Apply programming skills to solve problems',
-          targetPercentage: 60,
-          attainedPercentage: 55.2,
-          studentsAttained: 30,
-          totalStudents: 55,
-          attainmentLevel: 1,
-        },
-        {
-          coId: '4',
-          coCode: 'CO4',
-          coDescription: 'Analyze and debug code effectively',
-          targetPercentage: 60,
-          attainedPercentage: 82.1,
-          studentsAttained: 48,
-          totalStudents: 58,
-          attainmentLevel: 3,
-        },
-        {
-          coId: '5',
-          coCode: 'CO5',
-          coDescription: 'Work collaboratively on projects',
-          targetPercentage: 60,
-          attainedPercentage: 91.7,
-          studentsAttained: 55,
-          totalStudents: 60,
-          attainmentLevel: 3,
-        },
-      ];
-      setAttainments(mockAttainments);
-      setLastCalculated(new Date().toLocaleString());
+      const url = selectedSection === 'overall' 
+        ? `/api/courses/${courseId}/co-attainment`
+        : `/api/courses/${courseId}/co-attainment?sectionId=${selectedSection}`;
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        // Handle both single CO and course-level attainment responses
+        if (Array.isArray(data)) {
+          setAttainments(data);
+        } else if (data.attainments) {
+          setAttainments(data.attainments);
+        }
+        setLastCalculated(new Date().toLocaleString());
+      }
     } catch (error) {
       console.error('Failed to fetch attainments:', error);
     }
@@ -175,6 +136,25 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
       setCourseSettings(mockSettings);
     } catch (error) {
       console.error('Failed to fetch course settings:', error);
+    }
+  };
+
+  const fetchSections = async () => {
+    try {
+      // Get course details to find batch
+      const courseResponse = await fetch(`/api/courses/${courseId}`);
+      if (courseResponse.ok) {
+        const course = await courseResponse.json();
+        if (course.batchId) {
+          const sectionsResponse = await fetch(`/api/sections?batchId=${course.batchId}`);
+          if (sectionsResponse.ok) {
+            const sectionsData = await sectionsResponse.json();
+            setSections(sectionsData || []);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch sections:', error);
     }
   };
 
@@ -247,6 +227,33 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
             </div>
           </div>
         </CardHeader>
+        {/* Section Selector */}
+        {sections.length > 0 && (
+          <CardContent className="pb-4">
+            <div className="flex items-center gap-4">
+              <Label htmlFor="section-filter">Filter by Section:</Label>
+              <Select
+                value={selectedSection}
+                onValueChange={(value) => {
+                  setSelectedSection(value);
+                  fetchAttainments();
+                }}
+              >
+                <SelectTrigger id="section-filter" className="w-64">
+                  <SelectValue placeholder="Overall Course" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="overall">Overall Course</SelectItem>
+                  {sections.map((section: any) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      Section {section.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        )}
         <CardContent>
           {lastCalculated && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
