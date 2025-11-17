@@ -5,6 +5,9 @@ async function simpleSeed() {
   try {
     console.log('🌱 Starting simple database seeding...');
     
+    // Clean existing users only
+    await db.user.deleteMany();
+    
     // Try to find existing college or create new one
     let college = await db.college.findFirst({
       where: { code: 'CUIET' }

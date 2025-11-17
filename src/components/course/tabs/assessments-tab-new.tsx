@@ -113,8 +113,6 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [sections, setSections] = useState<any[]>([]);
-  const [selectedSection, setSelectedSection] = useState<string>('');
 
   useEffect(() => {
     if (courseData?.assessments) {
@@ -122,9 +120,6 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     } else {
       fetchAssessments();
     }
-    
-    // Fetch sections for this course
-    fetchSections();
     
     // Listen for CO updates
     const handleCOUpdate = () => {
@@ -147,35 +142,13 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
 
   const fetchAssessments = async () => {
     try {
-      const url = selectedSection 
-        ? `/api/courses/${courseId}/assessments?sectionId=${selectedSection}`
-        : `/api/courses/${courseId}/assessments`;
-      const response = await fetch(url);
+      const response = await fetch(`/api/courses/${courseId}/assessments`);
       if (response.ok) {
         const assessmentsData = await response.json();
         setAssessments(assessmentsData || []);
       }
     } catch (error) {
       console.error('Failed to fetch assessments:', error);
-    }
-  };
-
-  const fetchSections = async () => {
-    try {
-      // Get course details to find batch
-      const courseResponse = await fetch(`/api/courses/${courseId}`);
-      if (courseResponse.ok) {
-        const course = await courseResponse.json();
-        if (course.batchId) {
-          const sectionsResponse = await fetch(`/api/sections?batchId=${course.batchId}`);
-          if (sectionsResponse.ok) {
-            const sectionsData = await sectionsResponse.json();
-            setSections(sectionsData || []);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch sections:', error);
     }
   };
 
@@ -221,15 +194,6 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
       return;
     }
 
-    if (!selectedSection) {
-      toast({
-        title: "Error",
-        description: "Please select a section for this assessment",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
     try {
       const response = await fetch(`/api/courses/${courseId}/assessments`, {
@@ -242,7 +206,6 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
           type: newAssessment.type,
           maxMarks: newAssessment.maxMarks,
           weightage: newAssessment.weightage,
-          sectionId: selectedSection
         }),
       });
 
@@ -629,55 +592,12 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
               </Button>
             </CardContent>
           </Card>
-
-          {/* Section Selector */}
-          {sections.length > 0 && (
-            <Card>
-              <CardContent className="pb-4">
-                <div className="flex items-center gap-4">
-                  <Label htmlFor="section-select">Filter by Section:</Label>
-                  <Select
-                    value={selectedSection}
-                    onValueChange={(value) => {
-                      setSelectedSection(value);
-                      fetchAssessments();
-                    }}
-                  >
-                    <SelectTrigger id="section-select" className="w-64">
-                      <SelectValue placeholder="All Sections" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Sections</SelectItem>
-                      {sections.map((section: any) => (
-                        <SelectItem key={section.id} value={section.id}>
-                          Section {section.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {!assessments || assessments.length === 0 ? (
-            <div className="text-center py-8">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="text-muted-foreground mb-4">
-                      {assessments.length === 0 ? 'No assessments found.' : 'Loading assessments...'}
-                    </div>
-                    <Button onClick={() => setIsCreateDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create First Assessment
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-            assessments.map((assessment) => (
+        ) : (
+          assessments.map((assessment) => (
+            <Card key={assessment.id} className="overflow-hidden">
+              <Collapsible
+                open={expandedAssessment === assessment.id}
+                onOpenChange={(open) => setExpandedAssessment(open ? assessment.id : null)}
               >
                 <CollapsibleTrigger className="w-full">
                   <div className="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors">
