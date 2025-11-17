@@ -23,16 +23,19 @@ export async function GET(
 
     // Fetch assessments for the course
     const { searchParams } = new URL(request.url);
-    const sectionId = searchParams.get('sectionId');
+    const sectionIds = searchParams.get('sectionIds');
     
     let whereClause: any = {
       courseId,
       isActive: true
     };
 
-    // If sectionId is provided, filter by section
-    if (sectionId) {
-      whereClause.sectionId = sectionId;
+    // If sectionIds are provided, filter by sections
+    if (sectionIds) {
+      const sectionIdArray = sectionIds.split(',');
+      whereClause.sectionId = {
+        in: sectionIdArray
+      };
     }
 
     const assessments = await db.assessment.findMany({

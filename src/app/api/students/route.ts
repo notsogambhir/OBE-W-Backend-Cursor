@@ -101,6 +101,12 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        section: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         _count: {
           select: {
             enrollments: true,

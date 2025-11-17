@@ -16,10 +16,12 @@ async function seed() {
     await db.cOPOMapping.deleteMany();
     await db.cO.deleteMany();
     await db.course.deleteMany();
+    await db.teacherAssignment.deleteMany();
     await db.user.deleteMany();
+    await db.section.deleteMany();
     await db.batch.deleteMany();
-    await db.program.deleteMany();
     await db.pO.deleteMany();
+    await db.program.deleteMany();
     await db.college.deleteMany();
     
     console.log('✅ Existing data cleaned');
@@ -148,6 +150,24 @@ async function seed() {
     ]);
 
     console.log(`✅ Created ${batches.length} batches`);
+
+    // Create Sections
+    console.log('🏫 Creating sections...');
+    const sections = [];
+    for (const batch of batches) {
+      const sectionNames = ['A', 'B', 'C'];
+      for (const sectionName of sectionNames) {
+        const section = await db.section.create({
+          data: {
+            name: sectionName,
+            batchId: batch.id,
+          }
+        });
+        sections.push(section);
+      }
+    }
+
+    console.log(`✅ Created ${sections.length} sections`);
 
     // Create Program Outcomes
     console.log('🎯 Creating Program Outcomes...');
@@ -283,18 +303,22 @@ async function seed() {
       // Students (EXTENDED)
       ...batches.map((batch, batchIndex) => {
         const studentsPerBatch = 5; // Reduced for performance
+        const program = programs.find(p => p.id === batch.programId);
+        const batchSections = sections.filter(s => s.batchId === batch.id);
         return Array.from({ length: studentsPerBatch }, (_, i) => {
           const studentNumber = batchIndex * studentsPerBatch + i + 1;
+          const sectionIndex = i % batchSections.length; // Distribute students across sections
           return db.user.create({
             data: {
               email: `student${studentNumber}@obeportal.com`,
               studentId: `STU${String(studentNumber).padStart(4, '0')}`,
               password: hashedPassword,
-              name: `Student ${studentNumber} - ${batch.program.name}`,
+              name: `Student ${studentNumber} - ${program?.name || 'Unknown Program'}`,
               role: 'STUDENT',
-              collegeId: batch.program.collegeId,
+              collegeId: program?.collegeId,
               programId: batch.programId,
               batchId: batch.id,
+              sectionId: batchSections[sectionIndex]?.id,
             },
           });
         });
@@ -307,14 +331,15 @@ async function seed() {
     console.log('📚 Creating courses...');
     const courses = [];
     for (const batch of batches) {
+      const program = programs.find(p => p.id === batch.programId);
       const coursesPerBatch = 3;
       for (let i = 1; i <= coursesPerBatch; i++) {
         const course = await db.course.create({
           data: {
-            code: `${batch.program.code}${i}`,
-            name: `Course ${i} - ${batch.program.name}`,
+            code: `${program?.code || 'GEN'}${i}`,
+            name: `Course ${i} - ${program?.name || 'Unknown Program'}`,
             batchId: batch.id,
-            description: `Course ${i} for ${batch.program.name} covering fundamental concepts and practical applications.`,
+            description: `Course ${i} for ${program?.name || 'Unknown Program'} covering fundamental concepts and practical applications.`,
             status: 'ACTIVE',
             targetPercentage: 60.0,
             level1Threshold: 60.0,
@@ -372,22 +397,30 @@ async function seed() {
     console.log('📋 Creating assessments...');
     const assessments = [];
     for (const course of courses) {
+      const courseSections = sections.filter(s => {
+        const courseBatch = batches.find(b => b.id === course.batchId);
+        return courseBatch && s.batchId === courseBatch.id;
+      });
+      
       const assessmentTypes = [
         { type: 'Internal Assessment', weightage: 30, maxMarks: 30 },
         { type: 'Final Exam', weightage: 70, maxMarks: 70 }
       ];
       
-      for (const assessmentType of assessmentTypes) {
-        const assessment = await db.assessment.create({
-          data: {
-            courseId: course.id,
-            name: assessmentType.type,
-            type: assessmentType.type.toLowerCase().includes('exam') ? 'exam' : 'assignment',
-            maxMarks: assessmentType.maxMarks,
-            weightage: assessmentType.weightage,
-          }
-        });
-        assessments.push({ ...assessment, courseId: course.id });
+      for (const section of courseSections) {
+        for (const assessmentType of assessmentTypes) {
+          const assessment = await db.assessment.create({
+            data: {
+              courseId: course.id,
+              sectionId: section.id,
+              name: `${assessmentType.type} - ${section.name}`,
+              type: assessmentType.type.toLowerCase().includes('exam') ? 'exam' : 'assignment',
+              maxMarks: assessmentType.maxMarks,
+              weightage: assessmentType.weightage,
+            }
+          });
+          assessments.push({ ...assessment, courseId: course.id, sectionId: section.id });
+        }
       }
     }
 

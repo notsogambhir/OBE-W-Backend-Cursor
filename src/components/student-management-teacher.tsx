@@ -30,6 +30,11 @@ interface Student {
   name: string;
   role: string;
   isActive: boolean;
+  sectionId?: string;
+  section?: {
+    id: string;
+    name: string;
+  };
   program?: {
     id: string;
     name: string;
@@ -297,6 +302,7 @@ export function StudentManagementTeacher({ user }: { user: User }) {
                     <TableHead>Name</TableHead>
                     <TableHead>Program</TableHead>
                     <TableHead>Batch</TableHead>
+                    <TableHead>Section</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -315,6 +321,15 @@ export function StudentManagementTeacher({ user }: { user: User }) {
                         <Badge variant="secondary">
                           {student.batch?.name || 'N/A'}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {student.section ? (
+                          <Badge variant="outline">
+                            {student.section.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Unassigned</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

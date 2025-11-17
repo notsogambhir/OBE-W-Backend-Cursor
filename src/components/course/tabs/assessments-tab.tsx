@@ -31,12 +31,14 @@ import {
   CheckCircle, 
   Clock,
   ExternalLink,
-  Settings
+  Settings,
+  Users
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { courseEvents } from '@/lib/course-events';
 import Link from 'next/link';
 import { AssessmentManagement } from './assessment-management-new';
+import { useAuth } from '@/hooks/use-auth';
 
 interface Assessment {
   id: string;
@@ -47,6 +49,33 @@ interface Assessment {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  sectionId?: string;
+  section?: {
+    id: string;
+    name: string;
+  };
+}
+
+interface Section {
+  id: string;
+  name: string;
+  batchId: string;
+  _count?: {
+    students: number;
+  };
+}
+
+interface TeacherAssignment {
+  id: string;
+  courseId: string;
+  sectionId?: string;
+  teacherId: string;
+  isActive: boolean;
+  teacher?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 interface AssessmentsTabProps {
@@ -55,7 +84,10 @@ interface AssessmentsTabProps {
 }
 
 export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
+  const { user } = useAuth();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [showManagementDialog, setShowManagementDialog] = useState(false);
@@ -64,6 +96,7 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     type: 'exam' as 'exam' | 'quiz' | 'assignment' | 'project',
     maxMarks: 100,
     weightage: 10,
+    sectionId: '' as string,
   });
   const [loading, setLoading] = useState(false);
 
@@ -74,9 +107,13 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
       fetchAssessments();
     }
     
+    // Fetch sections and teacher assignments
+    fetchSectionsAndAssignments();
+    
     // Listen for CO updates (in case assessments need to refresh CO-related data)
     const handleCOUpdate = () => {
       fetchAssessments();
+      fetchSectionsAndAssignments();
     };
     
     courseEvents.on('co-updated', handleCOUpdate);
@@ -86,9 +123,42 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     };
   }, [courseId, courseData]);
 
+  const fetchSectionsAndAssignments = async () => {
+    try {
+      // Fetch sections for this course
+      const sectionsResponse = await fetch(`/api/courses/${courseId}/sections`);
+      if (sectionsResponse.ok) {
+        const sectionsData = await sectionsResponse.json();
+        setSections(sectionsData || []);
+      }
+
+      // Fetch teacher assignments
+      const assignmentsResponse = await fetch(`/api/courses/${courseId}/teacher-assignments`);
+      if (assignmentsResponse.ok) {
+        const assignmentsData = await assignmentsResponse.json();
+        setTeacherAssignments(assignmentsData.assignments || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch sections and assignments:', error);
+    }
+  };
+
   const fetchAssessments = async () => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/assessments`);
+      let url = `/api/courses/${courseId}/assessments`;
+      
+      // If user is a teacher, filter by their assigned sections
+      if (user?.role === 'TEACHER') {
+        const teacherSections = teacherAssignments
+          .filter(ta => ta.teacherId === user.id && ta.sectionId)
+          .map(ta => ta.sectionId);
+        
+        if (teacherSections.length > 0) {
+          url += `?sectionIds=${teacherSections.join(',')}`;
+        }
+      }
+      
+      const response = await fetch(url);
       if (response.ok) {
         const assessmentsData = await response.json();
         setAssessments(assessmentsData || []);
@@ -99,10 +169,10 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
   };
 
   const handleCreateAssessment = async () => {
-    if (!newAssessment.name.trim()) {
+    if (!newAssessment.name.trim() || !newAssessment.sectionId) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields including section",
         variant: "destructive",
       });
       return;
@@ -120,6 +190,7 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
           type: newAssessment.type,
           maxMarks: newAssessment.maxMarks,
           weightage: newAssessment.weightage,
+          sectionId: newAssessment.sectionId,
         }),
       });
 
@@ -130,7 +201,8 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
           name: '', 
           type: 'exam', 
           maxMarks: 100, 
-          weightage: 10
+          weightage: 10,
+          sectionId: '',
         });
         setIsCreateDialogOpen(false);
         toast({
@@ -240,6 +312,26 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="assessment-section">Section</Label>
+                    <Select
+                      value={newAssessment.sectionId}
+                      onValueChange={(value: string) => 
+                        setNewAssessment(prev => ({ ...prev, sectionId: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select section" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sections.map((section) => (
+                          <SelectItem key={section.id} value={section.id}>
+                            Section {section.name} ({section._count?.students || 0} students)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="total-marks">Total Marks</Label>
                     <Input
                       id="total-marks"
@@ -300,6 +392,7 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Assessment Name</TableHead>
+                    <TableHead>Section</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Total Marks</TableHead>
                     <TableHead>Weightage</TableHead>
@@ -311,6 +404,16 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                     <TableRow key={assessment.id}>
                       <TableCell className="font-medium">
                         {assessment.name}
+                      </TableCell>
+                      <TableCell>
+                        {assessment.section ? (
+                          <Badge variant="outline">
+                            <Users className="h-3 w-3 mr-1" />
+                            Section {assessment.section.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">All Sections</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge className={getTypeColor(assessment.type)}>
