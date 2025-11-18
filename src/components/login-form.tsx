@@ -255,52 +255,43 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('cse@obeportal.com', 'department123')}
+                  onClick={() => handleQuickLogin('business@obeportal.com', 'department123')}
                   className="text-xs"
                 >
-                  Dept Head (CSE)
+                  Dept Head (CBS)
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('eee@obeportal.com', 'department123')}
+                  onClick={() => handleQuickLogin('bba.teacher@obeportal.com', 'password123', 'CBS')}
                   className="text-xs"
                 >
-                  Dept Head (EEE)
+                  Teacher (BBA)
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('teacher1@obeportal.com', 'teacher123')}
+                  onClick={() => handleQuickLogin('bcse.teacher@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
-                  Teacher 1
+                  Teacher (CSE)
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('teacher2@obeportal.com', 'teacher123')}
+                  onClick={() => handleQuickLogin('beme.teacher@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
-                  Teacher 2
+                  Teacher (ME)
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('teacher3@obeportal.com', 'teacher123')}
-                  className="text-xs"
-                >
-                  Teacher 3
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickLogin('program1@obeportal.com', 'program123')}
+                  onClick={() => handleQuickLogin('pc.bba@obeportal.com', 'password123', 'CBS')}
                   className="text-xs"
                 >
                   Program Coord (BBA)
@@ -309,16 +300,25 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('program2@obeportal.com', 'program123')}
+                  onClick={() => handleQuickLogin('pc.bcse@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
-                  Program Coord (BBA)
+                  Program Coord (CSE)
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('student1@obeportal.com', 'student123')}
+                  onClick={() => handleQuickLogin('pc.beme@obeportal.com', 'password123', 'CUIET')}
+                  className="text-xs"
+                >
+                  Program Coord (ME)
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickLogin('student1@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   Student 1
@@ -327,7 +327,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('student2@obeportal.com', 'student123')}
+                  onClick={() => handleQuickLogin('student2@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   Student 2
@@ -336,23 +336,26 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('student3@obeportal.com', 'student123')}
+                  onClick={() => handleQuickLogin('student3@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   Student 3
                 </Button>
               </div>
               <div className="mt-3 space-y-1 text-xs text-blue-600">
-                <p><strong>All Account Passwords:</strong> password123</p>
+                <p><strong>All Account Passwords:</strong> password123 (except Admin/University/Dept)</p>
                 <p><strong>Test Accounts:</strong></p>
-                <p>• Admin: admin@obeportal.com</p>
-                <p>• University: university@obeportal.com</p>
-                <p>• Department Head (CSE): cse@obeportal.com</p>
-                <p>• Department Head (EEE): eee@obeportal.com</p>
-                <p>• Program Coordinator (BBA): program1@obeportal.com</p>
-                <p>• Program Coordinator (BBA): program2@obeportal.com</p>
-                <p>• Teacher: teacher1@obeportal.com / teacher2@obeportal.com</p>
-                <p>• Student: student1@obeportal.com / student2@obeportal.com</p>
+                <p>• Admin: admin@obeportal.com / admin123</p>
+                <p>• University: university@obeportal.com / university123</p>
+                <p>• Department Head (CUIET): cse@obeportal.com / department123</p>
+                <p>• Department Head (CBS): business@obeportal.com / department123</p>
+                <p>• Program Coordinator (BBA): pc.bba@obeportal.com / password123</p>
+                <p>• Program Coordinator (CSE): pc.bcse@obeportal.com / password123</p>
+                <p>• Program Coordinator (ME): pc.beme@obeportal.com / password123</p>
+                <p>• Teacher (BBA): bba.teacher@obeportal.com / password123</p>
+                <p>• Teacher (CSE): bcse.teacher@obeportal.com / password123</p>
+                <p>• Teacher (ME): beme.teacher@obeportal.com / password123</p>
+                <p>• Student: student1@obeportal.com / password123</p>
               </div>
             </div>
 
