@@ -13,7 +13,8 @@ import {
   Users, 
   FileText,
   Settings,
-  ArrowLeft
+  ArrowLeft,
+  Upload
 } from 'lucide-react';
 import Link from 'next/link';
 import { courseEvents } from '@/lib/course-events';
@@ -25,6 +26,8 @@ import { AssessmentsTabSectionAware } from '@/components/course/tabs/assessments
 import { COPOMappingTab } from '@/components/course/tabs/co-po-mapping-tab';
 import { COAttainmentsTab } from '@/components/course/tabs/co-attainments-tab';
 import { StudentReportsTab } from '@/components/course/tabs/student-reports-tab';
+import { MarksUploadTab } from '@/components/course/tabs/marks-upload-tab';
+import { StudentsTab } from '@/components/course/tabs/students-tab';
 import { TeacherAssignment } from '@/components/teacher-assignment';
 
 interface User {
@@ -205,10 +208,14 @@ export default function ManageCoursePage() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="flex flex-wrap justify-start w-full">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Overview
+          </TabsTrigger>
+          <TabsTrigger value="students" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Students
           </TabsTrigger>
           <TabsTrigger value="cos" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
@@ -217,6 +224,10 @@ export default function ManageCoursePage() {
           <TabsTrigger value="assessments" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Assessments
+          </TabsTrigger>
+          <TabsTrigger value="marks-upload" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Upload Marks
           </TabsTrigger>
           <TabsTrigger value="co-po-mapping" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -242,12 +253,20 @@ export default function ManageCoursePage() {
           <OverviewTab courseId={courseId} courseData={course} />
         </TabsContent>
 
+        <TabsContent value="students">
+          <StudentsTab courseId={courseId} courseData={course} />
+        </TabsContent>
+
         <TabsContent value="cos">
           <COsTab courseId={courseId} courseData={course} />
         </TabsContent>
 
         <TabsContent value="assessments">
           <AssessmentsTabSectionAware courseId={courseId} courseData={course} />
+        </TabsContent>
+
+        <TabsContent value="marks-upload">
+          <MarksUploadTab courseId={courseId} courseData={course} />
         </TabsContent>
 
         <TabsContent value="co-po-mapping">
