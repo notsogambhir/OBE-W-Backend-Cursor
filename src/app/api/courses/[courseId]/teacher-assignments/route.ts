@@ -213,13 +213,13 @@ export async function POST(
         });
       } else if (mode === 'section' && sectionAssignments) {
         // Create section-level assignments
-        for (const assignment of sectionAssignments) {
-          if (assignment.teacherId) { // Only create if teacher is selected (not "Use Course Default")
+        for (const [sectionId, teacherId] of Object.entries(sectionAssignments)) {
+          if (teacherId) { // Only create if teacher is selected (not "Use Course Default")
             await tx.teacherAssignment.create({
               data: {
                 courseId,
-                sectionId: assignment.sectionId,
-                teacherId: assignment.teacherId
+                sectionId,
+                teacherId
               }
             });
           }

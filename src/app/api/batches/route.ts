@@ -8,13 +8,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const programId = searchParams.get('programId');
 
-    const whereClause = programId ? { programId } : {};
+    const whereClause: any = { isActive: true };
+    
+    if (programId) {
+      whereClause.programId = programId;
+    }
     
     const batches = await db.batch.findMany({
-      where: { 
-        ...whereClause,
-        isActive: true 
-      },
+      where: whereClause,
       include: {
         program: {
           include: {

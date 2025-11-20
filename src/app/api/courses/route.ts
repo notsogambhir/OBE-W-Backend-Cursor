@@ -33,6 +33,13 @@ export async function GET(request: NextRequest) {
         include: {
           batch: {
             select: { name: true, startYear: true, endYear: true }
+          },
+          _count: {
+            select: {
+              courseOutcomes: true,
+              assessments: true,
+              enrollments: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -54,6 +61,13 @@ export async function GET(request: NextRequest) {
         include: {
           batch: {
             select: { name: true, startYear: true, endYear: true }
+          },
+          _count: {
+            select: {
+              courseOutcomes: true,
+              assessments: true,
+              enrollments: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -72,6 +86,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  courseOutcomes: true,
+                  assessments: true,
+                  enrollments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -92,6 +113,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  courseOutcomes: true,
+                  assessments: true,
+                  enrollments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -112,6 +140,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  courseOutcomes: true,
+                  assessments: true,
+                  enrollments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -128,6 +163,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  courseOutcomes: true,
+                  assessments: true,
+                  enrollments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -144,6 +186,13 @@ export async function GET(request: NextRequest) {
             include: {
               batch: {
                 select: { name: true, startYear: true, endYear: true }
+              },
+              _count: {
+                select: {
+                  courseOutcomes: true,
+                  assessments: true,
+                  enrollments: true
+                }
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -178,15 +227,34 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json();
-    const { courses, programId, batchId } = body;
+    const { courses, programId, batchId, code, name, description } = body;
+    
+    console.log('=== COURSE CREATION REQUEST ===');
+    console.log('Body:', body);
+    console.log('Courses:', courses);
+    console.log('Program ID:', programId);
+    console.log('Batch ID:', batchId);
+    
+    // Handle both single course and bulk course creation
+    let coursesToCreate = courses;
     
     if (!courses || !Array.isArray(courses) || courses.length === 0) {
-      return NextResponse.json({ error: 'No courses provided' }, { status: 400 });
+      // Check if this is a single course request
+      if (code && name && batchId) {
+        coursesToCreate = [{ code, name, description }];
+        console.log('Single course creation detected');
+      } else {
+        return NextResponse.json({ error: 'No courses provided' }, { status: 400 });
+      }
+    }
+    
+    if (!batchId) {
+      return NextResponse.json({ error: 'Batch ID is required' }, { status: 400 });
     }
     
     const results = [];
     
-    for (const courseData of courses) {
+    for (const courseData of coursesToCreate) {
       try {
         const course = await db.course.create({
           data: {

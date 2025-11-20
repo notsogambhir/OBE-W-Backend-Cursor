@@ -30,14 +30,37 @@ export function CourseCreation({ user, onCourseCreated }: CourseCreationProps) {
   const [courseName, setCourseName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingCourses, setExistingCourses] = useState<string[]>([]);
+  const [availableBatches, setAvailableBatches] = useState<any[]>([]);
+  const [isBatchValid, setIsBatchValid] = useState(true);
   const { selectedBatch } = useSidebarContext();
 
   // Fetch existing courses when batch changes
   useEffect(() => {
     if (selectedBatch) {
       fetchExistingCourses();
+      validateSelectedBatch();
     }
   }, [selectedBatch]);
+
+  const validateSelectedBatch = async () => {
+    if (!selectedBatch) return;
+    
+    try {
+      const response = await fetch('/api/batches');
+      if (response.ok) {
+        const batches = await response.json();
+        setAvailableBatches(batches);
+        const isValid = batches.some((batch: any) => batch.id === selectedBatch);
+        setIsBatchValid(isValid);
+        
+        if (!isValid) {
+          console.warn('Selected batch is not valid:', selectedBatch);
+        }
+      }
+    } catch (error) {
+      console.error('Error validating batch:', error);
+    }
+  };
 
   const fetchExistingCourses = async () => {
     try {
@@ -106,7 +129,15 @@ export function CourseCreation({ user, onCourseCreated }: CourseCreationProps) {
       } else {
         const error = await response.json();
         console.error('Course creation failed:', error);
-        toast.error(error.error || error.message || "Failed to create course");
+        
+        // Handle specific error messages
+        if (error.error?.includes('Foreign key constraint violated')) {
+          toast.error("Invalid batch selected. Please select a valid batch from the sidebar.");
+        } else if (error.error?.includes('duplicate')) {
+          toast.error("A course with this code already exists in this batch.");
+        } else {
+          toast.error(error.error || error.message || "Failed to create course");
+        }
       }
     } catch (error) {
       console.error('Error creating course:', error);
@@ -118,6 +149,7 @@ export function CourseCreation({ user, onCourseCreated }: CourseCreationProps) {
 
   const hasBatchSelected = !!selectedBatch;
   const isCourseCodeDuplicate = existingCourses.includes(courseCode.toUpperCase());
+  const canCreateCourse = hasBatchSelected && isBatchValid && !isCourseCodeDuplicate;
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -147,12 +179,22 @@ export function CourseCreation({ user, onCourseCreated }: CourseCreationProps) {
         {/* Batch Status */}
         <div className="mb-6">
           {hasBatchSelected ? (
-            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <Info className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-800">
-                Course will be created for your currently selected batch
-              </span>
-            </div>
+            isBatchValid ? (
+              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <Info className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-green-800">
+                  Course will be created for your currently selected batch
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <div className="text-sm text-red-800">
+                  <p className="font-medium">Invalid batch selected</p>
+                  <p className="text-xs">Please select a valid batch from the sidebar. Your current selection is no longer available.</p>
+                </div>
+              </div>
+            )
           ) : (
             <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -199,7 +241,7 @@ export function CourseCreation({ user, onCourseCreated }: CourseCreationProps) {
           <div className="flex justify-center">
             <Button 
               type="submit"
-              disabled={isSubmitting || !hasBatchSelected || isCourseCodeDuplicate}
+              disabled={isSubmitting || !canCreateCourse}
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-2 flex items-center gap-2 transition-colors"
             >
               {isSubmitting ? (

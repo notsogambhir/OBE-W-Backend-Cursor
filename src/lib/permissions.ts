@@ -137,3 +137,24 @@ export function canAccessCollege(user: AuthUser | null, collegeId?: string): boo
   
   return false;
 }
+
+export async function canTeacherManageCourse(teacherId: string, courseId: string, sectionId?: string): Promise<boolean> {
+  try {
+    const { db } = await import('./db');
+    
+    // Check if teacher is assigned to this course/section
+    const assignment = await db.teacherAssignment.findFirst({
+      where: {
+        teacherId,
+        courseId,
+        ...(sectionId && { sectionId }),
+        isActive: true
+      }
+    });
+
+    return !!assignment;
+  } catch (error) {
+    console.error('Error checking teacher course access:', error);
+    return false;
+  }
+}

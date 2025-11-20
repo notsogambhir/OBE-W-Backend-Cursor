@@ -150,21 +150,27 @@ export function LoginForm() {
       if (collegeCode) {
         // Wait for colleges to load if needed
         if (colleges.length === 0) {
+          console.log('Colleges not loaded yet, fetching...');
           await fetchColleges();
+          // Wait a bit more for state to update
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
         
         const college = colleges.find(c => c.code === collegeCode);
         if (college) {
           collegeId = college.id;
           setFormData(prev => ({ ...prev, collegeId: college.id }));
+          console.log(`Found college ${collegeCode} with ID: ${college.id}`);
         } else {
+          console.error(`College with code ${collegeCode} not found. Available colleges:`, colleges.map(c => c.code));
           throw new Error(`College with code ${collegeCode} not found`);
         }
       } else {
-        // For admin and university users, collegeId is not required
-        // Set it to empty string explicitly if not already set
-        if (!collegeId) {
-          collegeId = '';
+        // For admin and university users, try to find first available college
+        if (!collegeId && colleges.length > 0) {
+          collegeId = colleges[0].id;
+          setFormData(prev => ({ ...prev, collegeId }));
+          console.log(`Using first available college with ID: ${collegeId}`);
         }
       }
 
@@ -237,7 +243,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('admin@obeportal.com', 'admin123')}
+                  onClick={() => handleQuickLogin('admin@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   Admin
@@ -246,7 +252,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('university@obeportal.com', 'university123')}
+                  onClick={() => handleQuickLogin('university@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   University
@@ -343,12 +349,12 @@ export function LoginForm() {
                 </Button>
               </div>
               <div className="mt-3 space-y-1 text-xs text-blue-600">
-                <p><strong>All Account Passwords:</strong> password123 (except Admin/University/Dept)</p>
+                <p><strong>All Account Passwords:</strong> password123</p>
                 <p><strong>Test Accounts:</strong></p>
-                <p>• Admin: admin@obeportal.com / admin123</p>
-                <p>• University: university@obeportal.com / university123</p>
-                <p>• Department Head (CUIET): cse@obeportal.com / department123</p>
-                <p>• Department Head (CBS): business@obeportal.com / department123</p>
+                <p>• Admin: admin@obeportal.com / password123 (CUIET)</p>
+                <p>• University: university@obeportal.com / password123 (CUIET)</p>
+                <p>• Department Head (CUIET): cse@obeportal.com / password123</p>
+                <p>• Department Head (CBS): business@obeportal.com / password123</p>
                 <p>• Program Coordinator (BBA): pc.bba@obeportal.com / password123</p>
                 <p>• Program Coordinator (CSE): pc.bcse@obeportal.com / password123</p>
                 <p>• Program Coordinator (ME): pc.beme@obeportal.com / password123</p>
