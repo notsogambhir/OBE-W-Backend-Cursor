@@ -29,7 +29,7 @@ import {
   X,
   FileSpreadsheet
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/toaster-simple';
 import * as XLSX from 'xlsx';
 
 interface Question {
@@ -120,11 +120,10 @@ export function AssessmentManagement({ courseId, assessment, onClose, onUpdate }
 
   const handleSaveQuestion = async () => {
     if (!questionForm.question.trim() || questionForm.selectedCOs.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please fill in question text and select at least one CO",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Please fill in question text and select at least one CO"
+      );
       return;
     }
 
@@ -154,24 +153,22 @@ export function AssessmentManagement({ courseId, assessment, onClose, onUpdate }
         resetQuestionForm();
         setShowQuestionDialog(false);
         setEditingQuestion(null);
-        toast({
-          title: "Success",
-          description: `Question ${editingQuestion ? 'updated' : 'created'} successfully`,
-        });
+        toast.success(
+          "Success",
+          `Question ${editingQuestion ? 'updated' : 'created'} successfully`
+        );
       } else {
         const errorData = await response.json();
-        toast({
-          title: "Error",
-          description: errorData.error || "Failed to save question",
-          variant: "destructive",
-        });
+        toast.error(
+          "Error",
+          errorData.error || "Failed to save question"
+        );
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save question",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Failed to save question"
+      );
     } finally {
       setLoading(false);
     }
@@ -189,24 +186,22 @@ export function AssessmentManagement({ courseId, assessment, onClose, onUpdate }
 
       if (response.ok) {
         await fetchQuestions();
-        toast({
-          title: "Success",
-          description: "Question deleted successfully",
-        });
+        toast.success(
+          "Success",
+          "Question deleted successfully"
+        );
       } else {
         const errorData = await response.json();
-        toast({
-          title: "Error",
-          description: errorData.error || "Failed to delete question",
-          variant: "destructive",
-        });
+        toast.error(
+          "Error",
+          errorData.error || "Failed to delete question"
+        );
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete question",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Failed to delete question"
+      );
     }
   };
 
@@ -279,11 +274,10 @@ export function AssessmentManagement({ courseId, assessment, onClose, onUpdate }
 
   const handleUploadMarks = async () => {
     if (!uploadFile) {
-      toast({
-        title: "Error",
-        description: "Please select a file to upload",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Please select a file to upload"
+      );
       return;
     }
 
@@ -299,10 +293,10 @@ export function AssessmentManagement({ courseId, assessment, onClose, onUpdate }
 
       if (response.ok) {
         const result = await response.json();
-        toast({
-          title: "Success",
-          description: `${result.message}. Processed ${result.processedCount} students.`,
-        });
+        toast.success(
+          "Success",
+          `${result.message}. Processed ${result.processedCount} students.`
+        );
         setUploadFile(null);
         onUpdate(); // Refresh parent data
       } else {

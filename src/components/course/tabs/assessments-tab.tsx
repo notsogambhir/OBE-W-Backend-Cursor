@@ -34,7 +34,7 @@ import {
   Settings,
   Users
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/toaster-simple';
 import { courseEvents } from '@/lib/course-events';
 import Link from 'next/link';
 import { AssessmentManagement } from './assessment-management-new';
@@ -170,11 +170,10 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
 
   const handleCreateAssessment = async () => {
     if (!newAssessment.name.trim() || !newAssessment.sectionId) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields including section",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Please fill in all required fields including section"
+      );
       return;
     }
 
@@ -205,24 +204,22 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
           sectionId: '',
         });
         setIsCreateDialogOpen(false);
-        toast({
-          title: "Success",
-          description: "Assessment created successfully",
-        });
+        toast.success(
+          "Success",
+          "Assessment created successfully"
+        );
       } else {
         const errorData = await response.json();
-        toast({
-          title: "Error",
-          description: errorData.error || "Failed to create assessment",
-          variant: "destructive",
-        });
+        toast.error(
+          "Error",
+          errorData.error || "Failed to create assessment"
+        );
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create assessment",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Failed to create assessment"
+      );
     } finally {
       setLoading(false);
     }

@@ -65,7 +65,7 @@ export function AssessmentManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    type: 'exam' as const,
+    type: 'exam',
     maxMarks: '',
     weightage: '',
     courseId: '',
@@ -217,7 +217,7 @@ export function AssessmentManagement() {
     }
 
     try {
-      const response = await fetch(`/api/courses/${assessment.courseId}/assessments/${assessment.id}`, {
+      const response = await fetch(`/api/courses/${assessment.course}/assessments/${assessment.id}`, {
         method: 'DELETE',
       });
 
@@ -246,9 +246,10 @@ export function AssessmentManagement() {
 
   const openEditDialog = (assessment: Assessment) => {
     setEditingAssessment(assessment);
+    const assessmentType = assessment.type as 'exam' | 'quiz' | 'assignment' | 'project';
     setFormData({
       name: assessment.name,
-      type: assessment.type,
+      type: assessmentType,
       maxMarks: assessment.maxMarks.toString(),
       weightage: assessment.weightage.toString(),
       courseId: assessment.course.id,

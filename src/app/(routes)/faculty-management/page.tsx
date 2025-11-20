@@ -113,7 +113,7 @@ export default function FacultyManagement() {
         } else {
           // Program coordinators see faculty in their program only
           filteredUsers = data.filter((u: User) => 
-            u.programId === user.programId && u.role !== 'STUDENT'
+            u.programId === user?.programId && u.role !== 'STUDENT'
           );
         }
         setUsers(filteredUsers);

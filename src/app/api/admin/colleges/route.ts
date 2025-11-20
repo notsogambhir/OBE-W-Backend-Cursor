@@ -81,7 +81,8 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
       },
       include: {
-        departments: true
+        programs: true,
+        users: true
       }
     });
 

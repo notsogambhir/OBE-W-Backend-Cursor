@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
     }
 
-    let courses = [];
+    let courses: any[] = [];
     
     if (batchId) {
       // If batchId is provided, get courses from that batch
@@ -26,10 +26,40 @@ export async function GET(request: NextRequest) {
         if (!batch || batch.programId !== user.programId) {
           return NextResponse.json({ error: 'Access denied' }, { status: 403 });
         }
+      } else if (user.role === 'TEACHER') {
+        // For teachers, check if they are assigned to any courses in this batch
+        const assignedCourses = await db.course.findMany({
+          where: {
+            batchId: batchId,
+            teacherAssignments: {
+              some: {
+                teacherId: user.id,
+                isActive: true
+              }
+            }
+          },
+          select: { id: true }
+        });
+        
+        if (assignedCourses.length === 0) {
+          return NextResponse.json({ error: 'No assigned courses in this batch' }, { status: 403 });
+        }
+      }
+      
+      let whereCondition: any = { batchId: batchId };
+      
+      // For teachers, further filter by their assignments
+      if (user.role === 'TEACHER') {
+        whereCondition.teacherAssignments = {
+          some: {
+            teacherId: user.id,
+            isActive: true
+          }
+        };
       }
       
       courses = await db.course.findMany({
-        where: { batchId: batchId },
+        where: whereCondition,
         include: {
           batch: {
             select: { name: true, startYear: true, endYear: true }
@@ -50,14 +80,26 @@ export async function GET(request: NextRequest) {
       
     } else if (collegeId) {
       // If collegeId is provided, get courses from that college
-      courses = await db.course.findMany({
-        where: {
-          batch: {
-            program: {
-              collegeId: collegeId
-            }
+      let whereCondition: any = {
+        batch: {
+          program: {
+            collegeId: collegeId
           }
-        },
+        }
+      };
+      
+      // For teachers, further filter by their assignments
+      if (user.role === 'TEACHER') {
+        whereCondition.teacherAssignments = {
+          some: {
+            teacherId: user.id,
+            isActive: true
+          }
+        };
+      }
+      
+      courses = await db.course.findMany({
+        where: whereCondition,
         include: {
           batch: {
             select: { name: true, startYear: true, endYear: true }
@@ -155,10 +197,15 @@ export async function GET(request: NextRequest) {
           break;
           
         case 'TEACHER':
-          // Teachers can see courses from their batches
+          // Teachers can see courses assigned to them
           courses = await db.course.findMany({
             where: {
-              batchId: user.batchId || ''
+              teacherAssignments: {
+                some: {
+                  teacherId: user.id,
+                  isActive: true
+                }
+              }
             },
             include: {
               batch: {
@@ -252,7 +299,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Batch ID is required' }, { status: 400 });
     }
     
-    const results = [];
+    const results: any[] = [];
     
     for (const courseData of coursesToCreate) {
       try {

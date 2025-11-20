@@ -103,7 +103,6 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            departments: true,
             programs: true,
             users: true
           }
@@ -120,12 +119,11 @@ export async function DELETE(
 
     // Check if college has associated data
     if (
-      existingCollege._count.departments > 0 ||
       existingCollege._count.programs > 0 ||
       existingCollege._count.users > 0
     ) {
       return NextResponse.json(
-        { error: 'Cannot delete college with associated departments, programs, or users' },
+        { error: 'Cannot delete college with associated programs or users' },
         { status: 400 }
       );
     }

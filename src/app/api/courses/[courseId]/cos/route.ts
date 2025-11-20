@@ -103,7 +103,7 @@ export async function POST(
     const lastNumber = parseInt(lastCOCode.replace('CO', '')) || 0;
     const newCOCode = `CO${lastNumber + 1}`;
 
-    // Create new CO
+      // Create new CO
     const newCO = await db.cO.create({
       data: {
         courseId: courseId,
@@ -114,6 +114,10 @@ export async function POST(
     });
 
     console.log(`Created CO ${newCOCode} for course ${courseId}`);
+
+    // Emit course event to notify other components
+    // Note: In a real-time system, you might use WebSockets or Server-Sent Events
+    // For now, clients will need to refresh or the event system will handle intra-page updates
 
     return NextResponse.json(newCO, { status: 201 });
   } catch (error) {

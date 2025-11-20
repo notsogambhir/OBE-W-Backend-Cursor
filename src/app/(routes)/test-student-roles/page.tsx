@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { StudentManagementDepartment } from '@/components/student-management-department';
+import { StudentManagementAdmin } from '@/components/student-management-admin';
 import { StudentManagementProgramCoordinator } from '@/components/student-management-program-coordinator';
 import { StudentManagementTeacher } from '@/components/student-management-teacher';
 
@@ -26,7 +26,6 @@ const mockUsers: User[] = [
     name: 'Department User',
     role: 'DEPARTMENT',
     collegeId: 'cmhafms3q0001nfuy1lpdmsag',
-    departmentId: 'cmhafms3w0004nfuy2bm44ier',
   },
   {
     id: '2',
@@ -34,7 +33,6 @@ const mockUsers: User[] = [
     name: 'Program Coordinator',
     role: 'PROGRAM_COORDINATOR',
     collegeId: 'cmhafms3q0001nfuy1lpdmsag',
-    departmentId: 'cmhafms3w0004nfuy2bm44ier',
     programId: 'cmhafms3z000bnfuy97l5uj23',
   },
   {
@@ -43,7 +41,6 @@ const mockUsers: User[] = [
     name: 'Teacher',
     role: 'TEACHER',
     collegeId: 'cmhafms3q0001nfuy1lpdmsag',
-    departmentId: 'cmhafms3w0004nfuy2bm44ier',
   },
 ];
 

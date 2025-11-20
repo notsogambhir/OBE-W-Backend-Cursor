@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/server-auth';
-import { canCreateCourse } from '@/lib/permissions';
+import { canTeacherManageCourse } from '@/lib/permissions';
 
 export async function GET(
   request: NextRequest,
@@ -30,8 +30,35 @@ export async function GET(
       isActive: true
     };
 
-    // If sectionIds are provided, filter by sections
-    if (sectionIds) {
+    // For teachers, automatically filter by their assigned sections if sectionIds not provided
+    if (user.role === 'TEACHER' && !sectionIds) {
+      // Get teacher's assigned sections for this course
+      const teacherAssignments = await db.teacherAssignment.findMany({
+        where: {
+          teacherId: user.id,
+          courseId: courseId,
+          isActive: true
+        },
+        select: {
+          sectionId: true
+        }
+      });
+
+      const assignedSectionIds = teacherAssignments
+        .map(ta => ta.sectionId)
+        .filter(Boolean);
+
+      if (assignedSectionIds.length > 0) {
+        whereClause.sectionId = {
+          in: assignedSectionIds
+        };
+      } else {
+        // If teacher has no assigned sections, return empty array
+        return NextResponse.json([]);
+      }
+    }
+    // If sectionIds are explicitly provided (e.g., from frontend filtering), use them
+    else if (sectionIds) {
       const sectionIdArray = sectionIds.split(',');
       whereClause.sectionId = {
         in: sectionIdArray
@@ -70,11 +97,11 @@ export async function POST(
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
     }
 
-    if (!canCreateCourse(user)) {
-      return NextResponse.json({ 
-        error: 'Insufficient permissions. Only admin, university, department, and program coordinator roles can manage assessments.' 
-      }, { status: 403 });
-    }
+    console.log('Assessment creation permission check:', {
+      userRole: user.role,
+      userId: user.id,
+      courseId,
+    });
 
     const body = await request.json();
     const { name, type, maxMarks, weightage, sectionId } = body;
@@ -103,12 +130,14 @@ export async function POST(
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
-    // Check permissions
+    // Check permissions based on user role and specific section assignment
     const canManageAssessments = 
       user.role === 'ADMIN' || 
       user.role === 'UNIVERSITY' || 
       (user.role === 'PROGRAM_COORDINATOR' && course.batch.programId === user.programId) ||
       (user.role === 'TEACHER' && await canTeacherManageCourse(user.id, courseId, sectionId));
+
+    console.log('Can manage assessments result:', canManageAssessments);
 
     if (!canManageAssessments) {
       return NextResponse.json({ 
@@ -116,7 +145,7 @@ export async function POST(
       }, { status: 403 });
     }
 
-    // Verify the section exists and belongs to this course
+    // Verify section exists and belongs to this course
     const section = await db.section.findUnique({
       where: { id: sectionId },
       include: {
@@ -132,6 +161,7 @@ export async function POST(
     const newAssessment = await db.assessment.create({
       data: {
         courseId: courseId,
+        sectionId: sectionId, // Include sectionId in the assessment
         name: name.trim(),
         type,
         maxMarks: parseInt(maxMarks),

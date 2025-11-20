@@ -209,15 +209,19 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
                 <Select
                   value={selectedProgram || ''}
                   onValueChange={(value) => setSelectedProgram(value)}
-                  disabled={(!selectedCollege && isHighLevelUser) || loadingPrograms || ['PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role)}
+                  disabled={(!selectedCollege && isHighLevelUser) || (user.role === 'TEACHER' && loadingPrograms) || loadingPrograms}
                 >
                   <SelectTrigger id="program-select" className="mt-1">
                     <SelectValue placeholder={
-                      ['PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role) 
-                        ? "Program assigned" 
+                      user.role === 'TEACHER'
+                        ? loadingPrograms 
+                          ? "Loading programs..." 
+                          : "Select program"
                         : selectedCollege 
                           ? "Select program" 
-                          : "Select college first"
+                          : isHighLevelUser
+                            ? "Select college first"
+                            : "Select program"
                     } />
                   </SelectTrigger>
                   <SelectContent>
@@ -237,13 +241,17 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
               <Select
                 value={selectedBatch || ''}
                 onValueChange={(value) => setSelectedBatch(value)}
-                disabled={(!selectedProgram && !user.programId) || loadingBatches}
+                disabled={(!selectedProgram && isHighLevelUser) || (!selectedProgram && user.role === 'TEACHER') || loadingBatches}
               >
                 <SelectTrigger id="batch-select" className="mt-1">
                   <SelectValue placeholder={
-                    selectedProgram || user.programId 
+                    selectedProgram 
                       ? "Select batch" 
-                      : "Select program first"
+                      : user.role === 'TEACHER'
+                        ? "Select program first"
+                        : isHighLevelUser
+                          ? "Select program first"
+                          : "Select program"
                   } />
                 </SelectTrigger>
                 <SelectContent>

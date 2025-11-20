@@ -157,25 +157,23 @@ class ClientErrorTracker {
     const originalXHROpen = XMLHttpRequest.prototype.open;
     const originalXHRSend = XMLHttpRequest.prototype.send;
 
-    XMLHttpRequest.prototype.open = function(method: string, url: string | URL) {
+    XMLHttpRequest.prototype.open = function(method: string, url: string | URL, ...args: any[]) {
       this._method = method;
       this._url = url.toString();
       this._startTime = Date.now();
-      return originalXHROpen.apply(this, arguments as any);
+      return originalXHROpen.apply(this, [method, url, ...args]);
     };
 
-    XMLHttpRequest.prototype.send = function(body?: Document | BodyInit | null) {
-      const xhr = this;
-      
-      const originalOnReadyStateChange = xhr.onreadystatechange;
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-          const duration = Date.now() - (xhr as any)._startTime;
+    XMLHttpRequest.prototype.send = function(this: XMLHttpRequest, body?: Document | BodyInit | null) {
+      const originalOnReadyStateChange = this.onreadystatechange;
+      this.onreadystatechange = function() {
+        if (this.readyState === 4) {
+          const duration = Date.now() - (this as any)._startTime;
           
-          if (xhr.status >= 400) {
-            logger.apiError((xhr as any)._method, (xhr as any)._url, 
-              new Error(`HTTP ${xhr.status}`), {
-                statusCode: xhr.status,
+          if (this.status >= 400) {
+            logger.apiError((this as any)._method, (this as any)._url, 
+              new Error(`HTTP ${this.status}`), {
+                statusCode: this.status,
                 duration,
                 requestBody: body,
               });
@@ -183,11 +181,11 @@ class ClientErrorTracker {
         }
         
         if (originalOnReadyStateChange) {
-          originalOnReadyStateChange.apply(xhr, arguments as any);
+          originalOnReadyStateChange.call(this);
         }
       };
 
-      return originalXHRSend.apply(this, arguments as any);
+      return originalXHRSend.call(this, body);
     };
   }
 

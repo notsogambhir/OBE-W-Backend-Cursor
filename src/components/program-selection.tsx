@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/toaster-simple';
 
 interface Program {
   id: string;
@@ -46,21 +46,19 @@ export function ProgramSelection({ user }: { user: User }) {
       }
     } catch (error) {
       console.error('Failed to fetch programs:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load programs",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Failed to load programs"
+      );
     }
   };
 
   const handleProgramSelect = async () => {
     if (!selectedProgram) {
-      toast({
-        title: "Error",
-        description: "Please select a program",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Please select a program"
+      );
       return;
     }
 
@@ -78,20 +76,19 @@ export function ProgramSelection({ user }: { user: User }) {
       if (response.ok) {
         // Update local state immediately
         updateUserSelections({ programId: selectedProgram });
-        toast({
-          title: "Success",
-          description: "Program selected successfully",
-        });
+        toast.success(
+          "Success",
+          "Program selected successfully"
+        );
         // The page will automatically redirect due to auth state change
       } else {
         throw new Error('Failed to update program');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to select program",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Failed to select program"
+      );
     } finally {
       setLoading(false);
     }

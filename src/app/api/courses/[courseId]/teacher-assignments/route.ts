@@ -24,8 +24,8 @@ export async function GET(
       return NextResponse.json({ error: 'Course ID is required' }, { status: 400 });
     }
 
-    // Check permissions - Admin, University, and Program Coordinator can view teacher assignments
-    if (!['ADMIN', 'UNIVERSITY', 'PROGRAM_COORDINATOR'].includes(user.role)) {
+    // Check permissions - Admin, University, Program Coordinator, and Teachers can view their own assignments
+    if (!['ADMIN', 'UNIVERSITY', 'PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -56,8 +56,8 @@ export async function GET(
       }
     }
 
-    // Get all teacher assignments for this course
-    const assignments = await db.teacherAssignment.findMany({
+      // Get all teacher assignments for this course
+    let assignments = await db.teacherAssignment.findMany({
       where: {
         courseId,
         isActive: true
@@ -79,6 +79,15 @@ export async function GET(
               }
             }
           }
+        },
+        course: {
+          include: {
+            batch: {
+              include: {
+                program: true
+              }
+            }
+          }
         }
       },
       orderBy: [
@@ -87,12 +96,16 @@ export async function GET(
       ]
     });
 
+    // If user is a teacher, filter to show only their assignments
+    if (user.role === 'TEACHER') {
+      assignments = assignments.filter(assignment => assignment.teacherId === user.id);
+    }
+
     // Get available teachers for assignment
-    const availableTeachers = await db.user.findMany({
+    let availableTeachersQuery: any = {
       where: {
         role: 'TEACHER',
-        isActive: true,
-        ...(user.collegeId && { collegeId: user.collegeId }) // Filter by college for Department role
+        isActive: true
       },
       select: {
         id: true,
@@ -104,7 +117,26 @@ export async function GET(
       orderBy: {
         name: 'asc'
       }
-    });
+    };
+
+    // If user is Department role, filter by their college
+    if (user.role === 'DEPARTMENT' && user.collegeId) {
+      availableTeachersQuery.where.collegeId = user.collegeId;
+    } else if (user.role === 'TEACHER' && user.collegeId) {
+      // For teachers, show teachers from their college
+      availableTeachersQuery.where.collegeId = user.collegeId;
+    } else if (user.role === 'PROGRAM_COORDINATOR' && user.programId) {
+      // For program coordinators, show teachers from their program's college
+      const program = await db.program.findUnique({
+        where: { id: user.programId },
+        select: { collegeId: true }
+      });
+      if (program) {
+        availableTeachersQuery.where.collegeId = program.collegeId;
+      }
+    }
+
+    const availableTeachers = await db.user.findMany(availableTeachersQuery);
 
     // Get all sections for this course
     const sections = await db.section.findMany({
@@ -132,7 +164,13 @@ export async function GET(
       assignments,
       courseLevelAssignment,
       availableTeachers,
-      sections
+      sections,
+      batchInfo: {
+        batchId: course.batch.id,
+        batchName: course.batch.name,
+        programId: course.batch.program.id,
+        programName: course.batch.program.name
+      }
     });
   } catch (error) {
     console.error('Teacher assignments GET error:', error);
@@ -213,12 +251,12 @@ export async function POST(
         });
       } else if (mode === 'section' && sectionAssignments) {
         // Create section-level assignments
-        for (const [sectionId, teacherId] of Object.entries(sectionAssignments)) {
-          if (teacherId) { // Only create if teacher is selected (not "Use Course Default")
+        for (const [sectionId, teacherId] of Object.entries(sectionAssignments as Record<string, string>)) {
+          if (teacherId && sectionId && sectionId.trim() !== '') { // Only create if teacher is selected and sectionId is not empty
             await tx.teacherAssignment.create({
               data: {
                 courseId,
-                sectionId,
+                sectionId: sectionId.trim(),
                 teacherId
               }
             });

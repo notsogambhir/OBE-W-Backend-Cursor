@@ -62,8 +62,8 @@ export async function PUT(
     }
 
     // For Department role, check if they have access to this batch
-    if (user.role === 'DEPARTMENT') {
-      if (student.batch.program.collegeId !== user.collegeId) {
+    if (user?.role === 'DEPARTMENT') {
+      if (student?.batch?.program?.collegeId !== user?.collegeId) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }

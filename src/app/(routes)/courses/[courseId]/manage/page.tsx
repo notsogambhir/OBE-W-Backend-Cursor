@@ -27,6 +27,16 @@ import { COAttainmentsTab } from '@/components/course/tabs/co-attainments-tab';
 import { StudentReportsTab } from '@/components/course/tabs/student-reports-tab';
 import { TeacherAssignment } from '@/components/teacher-assignment';
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  collegeId?: string;
+  programId?: string;
+  batchId?: string;
+}
+
 interface Course {
   id: string;
   code: string;

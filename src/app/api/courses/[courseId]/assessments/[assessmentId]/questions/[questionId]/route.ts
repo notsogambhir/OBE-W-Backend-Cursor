@@ -26,7 +26,23 @@ export async function PUT(
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
     }
 
-    if (!canCreateCourse(user)) {
+    // Check if teacher can manage this assessment
+    if (user.role === 'TEACHER') {
+      const assessment = await db.assessment.findFirst({
+        where: {
+          id: assessmentId,
+          courseId,
+          isActive: true
+        }
+      });
+
+      if (!assessment || !assessment.sectionId || !(await canTeacherManageCourse(user.id, courseId, assessment.sectionId))) {
+        return NextResponse.json(
+          { error: 'Insufficient permissions to update questions for this assessment' },
+          { status: 403 }
+        );
+      }
+    } else if (!canCreateCourse(user)) {
       return NextResponse.json(
         { error: 'Insufficient permissions to update questions' },
         { status: 403 }
@@ -143,7 +159,23 @@ export async function DELETE(
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
     }
 
-    if (!canCreateCourse(user)) {
+    // Check if teacher can manage this assessment
+    if (user.role === 'TEACHER') {
+      const assessment = await db.assessment.findFirst({
+        where: {
+          id: assessmentId,
+          courseId,
+          isActive: true
+        }
+      });
+
+      if (!assessment || !assessment.sectionId || !(await canTeacherManageCourse(user.id, courseId, assessment.sectionId))) {
+        return NextResponse.json(
+          { error: 'Insufficient permissions to delete questions for this assessment' },
+          { status: 403 }
+        );
+      }
+    } else if (!canCreateCourse(user)) {
       return NextResponse.json(
         { error: 'Insufficient permissions to delete questions' },
         { status: 403 }

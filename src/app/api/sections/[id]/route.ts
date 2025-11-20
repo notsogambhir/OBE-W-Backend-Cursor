@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/auth';
 // DELETE /api/sections/[id] - Delete a section
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = request.cookies.get('auth-token')?.value;
@@ -18,7 +18,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const sectionId = params.id;
+    const { id: sectionId } = await params;
 
     if (!sectionId) {
       return NextResponse.json({ error: 'Section ID is required' }, { status: 400 });

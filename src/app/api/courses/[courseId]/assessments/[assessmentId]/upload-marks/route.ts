@@ -193,8 +193,9 @@ export async function POST(
           // Upsert student marks
           await tx.studentMark.upsert({
             where: {
-              questionId_studentId_academicYear: {
+              questionId_sectionId_studentId_academicYear: {
                 questionId: mark.questionId,
+                sectionId: mark.sectionId || null,
                 studentId: result.studentId,
                 academicYear
               }

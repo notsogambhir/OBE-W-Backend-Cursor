@@ -24,7 +24,52 @@ export async function GET(
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
     }
 
-    if (!canCreateCourse(user)) {
+    // Check permissions based on user role
+    let canViewQuestions = false;
+    
+    if (['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR'].includes(user.role)) {
+      canViewQuestions = true;
+    } else if (user.role === 'TEACHER') {
+      // For teachers, check if they are assigned to this course/section
+      const assessment = await db.assessment.findFirst({
+        where: {
+          id: assessmentId,
+          courseId,
+          isActive: true
+        }
+      });
+
+      // Teachers can view questions for:
+      // 1. Course-level assessments (no sectionId) - if they have course-level assignment
+      // 2. Section-level assessments - if they are assigned to that section
+      if (assessment) {
+        if (!assessment.sectionId) {
+          // Course-level assessment - check if teacher has course-level assignment
+          const courseAssignment = await db.teacherAssignment.findFirst({
+            where: {
+              teacherId: user.id,
+              courseId,
+              sectionId: null, // Course-level assignment
+              isActive: true
+            }
+          });
+          canViewQuestions = !!courseAssignment;
+        } else {
+          // Section-level assessment - check if teacher is assigned to this section
+          const sectionAssignment = await db.teacherAssignment.findFirst({
+            where: {
+              teacherId: user.id,
+              courseId,
+              sectionId: assessment.sectionId,
+              isActive: true
+            }
+          });
+          canViewQuestions = !!sectionAssignment;
+        }
+      }
+    }
+
+    if (!canViewQuestions) {
       return NextResponse.json(
         { error: 'Insufficient permissions to view questions' },
         { status: 403 }
@@ -86,28 +131,57 @@ export async function POST(
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
     }
 
-    if (!canCreateCourse(user)) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions to create questions' },
-        { status: 403 }
-      );
-    }
+    // Check permissions based on user role
+    let canManageQuestions = false;
+    
+    if (['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR'].includes(user.role)) {
+      canManageQuestions = true;
+    } else if (user.role === 'TEACHER') {
+      // For teachers, check if they are assigned to this course/section
+      const assessment = await db.assessment.findFirst({
+        where: {
+          id: assessmentId,
+          courseId,
+          isActive: true
+        }
+      });
 
-    // Validate assessment exists and belongs to course
-    const assessment = await db.assessment.findFirst({
-      where: {
-        id: assessmentId,
-        courseId,
-        isActive: true
+              // Teachers can manage questions for:
+        // 1. Course-level assessments (no sectionId) - if they have course-level assignment
+        // 2. Section-level assessments - if they are assigned to that section
+        if (assessment) {
+          if (!assessment.sectionId) {
+            // Course-level assessment - check if teacher has course-level assignment
+            const courseAssignment = await db.teacherAssignment.findFirst({
+              where: {
+                teacherId: user.id,
+                courseId,
+                sectionId: null, // Course-level assignment
+                isActive: true
+              }
+            });
+            canManageQuestions = !!courseAssignment;
+          } else {
+            // Section-level assessment - check if teacher is assigned to this section
+            const sectionAssignment = await db.teacherAssignment.findFirst({
+              where: {
+                teacherId: user.id,
+                courseId,
+                sectionId: assessment.sectionId,
+                isActive: true
+              }
+            });
+            canManageQuestions = !!sectionAssignment;
+          }
+        }
+
+        if (!canManageQuestions) {
+          return NextResponse.json(
+            { error: 'Insufficient permissions to manage questions for this assessment' },
+            { status: 403 }
+          );
+        }
       }
-    });
-
-    if (!assessment) {
-      return NextResponse.json(
-        { error: 'Assessment not found' },
-        { status: 404 }
-      );
-    }
 
     // Validate COs exist and belong to course
     const cos = await db.cO.findMany({
@@ -137,19 +211,6 @@ export async function POST(
             coId,
             isActive: true
           }))
-        }
-      },
-      include: {
-        coMappings: {
-          include: {
-            co: {
-              select: {
-                id: true,
-                code: true,
-                description: true
-              }
-            }
-          }
         }
       }
     });

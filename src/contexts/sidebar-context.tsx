@@ -90,16 +90,19 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     fetchColleges();
   }, []);
 
-  // Fetch programs when college changes
+  // Fetch programs when college changes or for teachers on mount
   useEffect(() => {
     if (selectedCollege) {
       fetchPrograms(selectedCollege);
+    } else if (user?.role === 'TEACHER' && user?.collegeId) {
+      // For teachers, fetch programs from their assigned college
+      fetchPrograms(user.collegeId);
     } else {
       setPrograms([]);
       setSelectedProgram(null);
       setSelectedBatch(null);
     }
-  }, [selectedCollege]);
+  }, [selectedCollege, user?.role, user?.collegeId]);
 
   // Fetch batches when program changes
   useEffect(() => {
@@ -130,8 +133,11 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setPrograms(data);
-        setSelectedProgram(null);
-        setSelectedBatch(null);
+        // Only reset selections if this is not the teacher's auto-fetch
+        if (!(user?.role === 'TEACHER' && collegeId === user.collegeId && !selectedCollege)) {
+          setSelectedProgram(null);
+          setSelectedBatch(null);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch programs:', error);

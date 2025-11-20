@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       // Verify all programs belong to the user's college
       const programs = await db.program.findMany({
         where: {
-          id: { in: programIds },
-          collegeId: user.collegeId
+          id: { in: programIds || [] },
+          collegeId: user.collegeId || undefined
         }
       });
 

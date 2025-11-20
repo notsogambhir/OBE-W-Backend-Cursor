@@ -23,7 +23,6 @@ interface Course {
   id: string;
   code: string;
   name: string;
-  semester: string;
   status: 'FUTURE' | 'ACTIVE' | 'COMPLETED';
   batch: {
     id: string;
@@ -94,22 +93,28 @@ function CourseCategory({ title, courses, status, defaultExpanded = false }: Cou
             </div>
           ) : (
             <div className="space-y-3">
-              {courses.map((course) => (
+              {courses.map((course) => {
+                // Skip if course is undefined or invalid
+                if (!course || !course.id) {
+                  return null;
+                }
+                
+                return (
                 <div key={course.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getStatusColor(course.status)}`}>
                       <BookOpen className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{course.name}</p>
-                      <p className="text-xs text-gray-600">{course.code} • {course.semester} Semester</p>
-                      <p className="text-xs text-gray-500">{course.batch.program.name} • {course.batch.name}</p>
+                      <p className="text-sm font-medium text-gray-900">{course.name || 'Unknown Course'}</p>
+                      <p className="text-xs text-gray-600">{course.code || 'N/A'} • {course.batch?.name || 'Unknown Batch'}</p>
+                      <p className="text-xs text-gray-500">{course.batch?.program?.name || 'Unknown Program'} • {course.batch?.name || 'Unknown Batch'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">{course._count.enrollments} Students</Badge>
-                    <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200 text-xs">{course._count.courseOutcomes} COs</Badge>
-                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{course._count.assessments} Assessments</Badge>
+                    <Badge variant="outline" className="text-xs">{course._count?.enrollments || 0} Students</Badge>
+                    <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200 text-xs">{course._count?.courseOutcomes || 0} COs</Badge>
+                    <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{course._count?.assessments || 0} Assessments</Badge>
                     <Badge className={`text-xs ${getStatusBadgeColor(course.status)}`}>
                       {course.status}
                     </Badge>
@@ -118,7 +123,8 @@ function CourseCategory({ title, courses, status, defaultExpanded = false }: Cou
                     </Link>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/toaster-simple';
 import { Users, UserCheck, Save, AlertTriangle } from 'lucide-react';
 
 interface Teacher {
@@ -77,7 +77,7 @@ export function TeacherAssignment({ courseId, user }: TeacherAssignmentProps) {
   const [initialMode, setInitialMode] = useState<'single' | 'section'>('single');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Using simple toast system instead
 
   // Fetch course and assignment data
   useEffect(() => {
@@ -165,10 +165,10 @@ export function TeacherAssignment({ courseId, user }: TeacherAssignmentProps) {
 
       if (response.ok) {
         const data = await response.json();
-        toast({
-          title: "Success",
-          description: `Teacher assignments saved successfully in ${data.mode} mode`,
-        });
+        toast.success(
+          "Success",
+          `Teacher assignments saved successfully in ${data.mode} mode`
+        );
         
         // Refresh data
         const refreshResponse = await fetch(`/api/courses/${courseId}/teacher-assignments`);
@@ -180,28 +180,28 @@ export function TeacherAssignment({ courseId, user }: TeacherAssignmentProps) {
         }
       } else {
         const error = await response.json();
-        toast({
-          title: "Error",
-          description: error.error || "Failed to save teacher assignments",
-          variant: "destructive",
-        });
+        toast.error(
+          "Error",
+          error.error || "Failed to save teacher assignments"
+        );
       }
     } catch (error) {
       console.error('Failed to save teacher assignments:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save teacher assignments",
-        variant: "destructive",
-      });
+      toast.error(
+        "Error",
+        "Failed to save teacher assignments"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleSectionAssignmentChange = (sectionId: string, teacherId: string) => {
+    // Convert "default" back to empty string for storage
+    const valueToStore = teacherId === 'default' ? '' : teacherId;
     setSectionAssignments(prev => ({
       ...prev,
-      [sectionId]: teacherId
+      [sectionId]: valueToStore
     }));
   };
 
@@ -358,14 +358,14 @@ export function TeacherAssignment({ courseId, user }: TeacherAssignmentProps) {
                         <div className="space-y-2">
                           <Label htmlFor={`section-${section.id}`}>Assign Teacher</Label>
                           <Select
-                            value={sectionAssignments[section.id] || ''}
+                            value={sectionAssignments[section.id] || 'default'}
                             onValueChange={(value) => handleSectionAssignmentChange(section.id, value)}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select teacher or use default" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Use Course Default</SelectItem>
+                              <SelectItem value="default">Use Course Default</SelectItem>
                               {availableTeachers.map((teacher) => (
                                 <SelectItem key={teacher.id} value={teacher.id}>
                                   {teacher.name}

@@ -21,7 +21,6 @@ export default function TestStudentsFrontendPage() {
     try {
       const params = new URLSearchParams();
       if (user.collegeId) params.append('collegeId', user.collegeId);
-      if (user.departmentId) params.append('departmentId', user.departmentId);
       if (user.programId) params.append('programId', user.programId);
       if (user.batchId) params.append('batchId', user.batchId);
 

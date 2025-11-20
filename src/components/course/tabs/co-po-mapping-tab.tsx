@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Target, Link2, Save, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { courseEvents } from '@/lib/course-events';
 
 interface CourseOutcome {
   id: string;
@@ -186,6 +187,10 @@ export function COPOMappingTab({ courseId, courseData }: COPOMappingProps) {
       const result = await response.json();
       
       setHasChanges(false);
+      
+      // Emit course event to notify other components
+      courseEvents.emit('co-updated');
+      
       toast({
         title: "Success",
         description: `Successfully saved ${result.count} CO-PO mappings`,

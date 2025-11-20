@@ -152,11 +152,9 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
       setUser(JSON.parse(storedUser));
     }
     
-    if (courseData?.assessments) {
-      setAssessments(courseData.assessments);
-    } else {
-      fetchAssessments();
-    }
+    // Always fetch assessments from API to ensure proper filtering for teachers
+    // Don't use courseData.assessments as it doesn't filter by teacher assignments
+    fetchAssessments();
     
     // Listen for CO updates
     const handleCOUpdate = () => {
@@ -168,7 +166,7 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     return () => {
       courseEvents.off('co-updated', handleCOUpdate);
     };
-  }, [courseId, courseData]);
+  }, [courseId]);
 
   useEffect(() => {
     if (expandedAssessment) {
@@ -199,19 +197,7 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
 
   const fetchAssessments = async () => {
     try {
-      let url = `/api/courses/${courseId}/assessments`;
-      
-      // For teachers, filter assessments by their assigned sections
-      if (user?.role === 'TEACHER' && teacherAssignments.length > 0) {
-        const assignedSectionIds = teacherAssignments
-          .filter(a => a.teacherId === user.id)
-          .map(a => a.sectionId)
-          .filter(Boolean);
-        
-        if (assignedSectionIds.length > 0) {
-          url += `?sectionIds=${assignedSectionIds.join(',')}`;
-        }
-      }
+      const url = `/api/courses/${courseId}/assessments`;
       
       const response = await fetch(url);
       if (response.ok) {
@@ -227,16 +213,14 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     if (!expandedAssessment) return;
     
     try {
-      const assessment = assessments.find(a => a.id === expandedAssessment);
-      if (assessment?.questions) {
-        setQuestions(assessment.questions);
-        return;
-      }
-
+      // Always fetch from API since we're now getting filtered assessments
       const response = await fetch(`/api/courses/${courseId}/assessments/${expandedAssessment}/questions`);
       if (response.ok) {
         const data = await response.json();
+        console.log('Questions fetched:', data.length, data);
+        console.log('Before setQuestions - current questions count:', questions.length);
         setQuestions(data || []);
+        console.log('After setQuestions - new questions count:', (data || []).length);
       }
     } catch (error) {
       console.error('Failed to fetch questions:', error);
@@ -248,7 +232,10 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
       const response = await fetch(`/api/courses/${courseId}/cos`);
       if (response.ok) {
         const data = await response.json();
+        console.log('COs loaded:', data.length, data);
         setCOs(data || []);
+      } else {
+        console.error('Failed to fetch COs:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch COs:', error);
@@ -329,6 +316,13 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
   };
 
   const handleSaveQuestion = async () => {
+    console.log('Frontend question creation attempt:', {
+      questionText: questionForm.question.trim(),
+      selectedCOs: questionForm.selectedCOs,
+      expandedAssessment,
+      isEditing: !!editingQuestion
+    });
+
     if (!questionForm.question.trim() || questionForm.selectedCOs.length === 0) {
       toast({
         title: "Error",
@@ -351,12 +345,20 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
         coIds: questionForm.selectedCOs
       };
 
+      console.log('Sending question request:', { url, method, body });
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
+      });
+
+      console.log('Question response:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
       });
 
       if (response.ok) {
@@ -668,6 +670,14 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                       />
                     </div>
                   </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateAssessment} disabled={loading}>
+                      {loading ? 'Creating...' : 'Create Assessment'}
+                    </Button>
+                  </div>
                 </DialogContent>
               </Dialog>
             )}
@@ -740,7 +750,7 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                       <div className="p-4 border-b">
                         <h4 className="font-medium">Questions</h4>
                       </div>
-                      {assessment.questions && assessment.questions.length > 0 ? (
+                      {questions && questions.length > 0 ? (
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -751,7 +761,7 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {assessment.questions.map((question) => (
+                            {questions.map((question) => (
                               <TableRow key={question.id}>
                                 <TableCell className="max-w-xs">
                                   <div className="truncate" title={question.question}>
