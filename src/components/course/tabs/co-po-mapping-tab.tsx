@@ -73,7 +73,7 @@ export function COPOMappingTab({ courseId, courseData }: COPOMappingProps) {
       // Fetch actual data from APIs
       const [cosResponse, posResponse, mappingsResponse] = await Promise.all([
         fetch(`/api/courses/${courseId}/cos`),
-        fetch(`/api/pos?programId=${course.batch?.program?.id || ''}`),
+        fetch(`/api/pos?programId=${course.programId || ''}`),
         fetch(`/api/co-po-mappings?courseId=${courseId}`)
       ]);
 

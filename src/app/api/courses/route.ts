@@ -62,7 +62,14 @@ export async function GET(request: NextRequest) {
         where: whereCondition,
         include: {
           batch: {
-            select: { name: true, startYear: true, endYear: true }
+            include: {
+              program: {
+                select: {
+                  name: true,
+                  code: true
+                }
+              }
+            }
           },
           _count: {
             select: {
@@ -102,7 +109,14 @@ export async function GET(request: NextRequest) {
         where: whereCondition,
         include: {
           batch: {
-            select: { name: true, startYear: true, endYear: true }
+            include: {
+              program: {
+                select: {
+                  name: true,
+                  code: true
+                }
+              }
+            }
           },
           _count: {
             select: {

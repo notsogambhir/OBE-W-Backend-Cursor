@@ -81,7 +81,10 @@ export async function GET(
       isActive: course.isActive,
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
+      programId: course.batch.program.id,
       programName: course.batch.program.name,
+      programCode: course.batch.program.code,
+      batchId: course.batch.id,
       batchName: course.batch.name,
       stats: {
         students: course._count.enrollments,
@@ -317,7 +320,10 @@ export async function PATCH(
       isActive: course.isActive,
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
+      programId: course.batch.program.id,
       programName: course.batch.program.name,
+      programCode: course.batch.program.code,
+      batchId: course.batch.id,
       batchName: course.batch.name,
       stats: {
         students: course._count.enrollments,
