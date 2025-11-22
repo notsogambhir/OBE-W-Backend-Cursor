@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/server-auth';
-import { canCreateCourse } from '@/lib/permissions';
+import { canCreateCourse, canTeacherManageCourse } from '@/lib/permissions';
 
 export async function GET(
   request: NextRequest,
@@ -22,13 +22,6 @@ export async function GET(
     const user = await getUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
-    }
-
-    if (!canCreateCourse(user)) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions to download template' },
-        { status: 403 }
-      );
     }
 
     // Validate assessment exists and belongs to course, include section information
@@ -69,6 +62,22 @@ export async function GET(
       return NextResponse.json(
         { error: 'Assessment not found' },
         { status: 404 }
+      );
+    }
+
+    // Check permissions - Admin/University/Department/Program Coordinator can access all
+    // Teachers can only access if they're assigned to this course/section
+    let hasPermission = canCreateCourse(user);
+    
+    if (!hasPermission && user.role === 'TEACHER') {
+      // For teachers, check if they're assigned to this course/section
+      hasPermission = await canTeacherManageCourse(user.id, courseId, assessment.sectionId || undefined);
+    }
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to download template' },
+        { status: 403 }
       );
     }
 

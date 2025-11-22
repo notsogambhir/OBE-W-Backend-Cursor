@@ -65,7 +65,13 @@ fi
 
 # Step 4: Test sections
 echo "4. Testing sections API..."
-SECTIONS_RESPONSE=$(curl -s -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:3000/api/sections")
+# Extract batchId from the course we retrieved earlier
+BATCH_ID=$(echo $COURSES_RESPONSE | jq -r '.[0].batchId // empty')
+if [[ -n "$BATCH_ID" ]]; then
+  SECTIONS_RESPONSE=$(curl -s -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:3000/api/sections?batchId=$BATCH_ID")
+else
+  SECTIONS_RESPONSE=$(curl -s -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:3000/api/sections")
+fi
 
 if [[ $SECTIONS_RESPONSE == *"id"* ]]; then
   echo "✓ Sections API working"
