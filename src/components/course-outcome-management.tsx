@@ -207,7 +207,7 @@ export function CourseOutcomeManagement() {
     }
 
     try {
-      const response = await fetch(`/api/courses/${co.courseId}/cos/${co.id}`, {
+      const response = await fetch(`/api/courses/${co.course?.id || courseId}/cos/${co.id}`, {
         method: 'DELETE',
       });
 

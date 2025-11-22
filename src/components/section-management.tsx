@@ -263,7 +263,7 @@ export function SectionManagement({ user }: SectionManagementProps) {
       if (response.ok) {
         setStudents(prev => prev.map(student => 
           student.id === studentId 
-            ? { ...student, sectionId }
+            ? { ...student, sectionId: apiSectionId }
             : student
         ));
         toast({

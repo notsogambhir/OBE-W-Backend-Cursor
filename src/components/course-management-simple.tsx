@@ -46,10 +46,10 @@ interface Course {
       code: string;
     };
   };
-  _count?: {
-    courseOutcomes?: number;
-    assessments?: number;
-    enrollments?: number;
+  _count: {
+    courseOutcomes: number;
+    assessments: number;
+    enrollments: number;
   };
 }
 
@@ -230,9 +230,9 @@ function CourseCategory({ title, courses, status, defaultExpanded = false, onUpd
                                 This action cannot be undone and will permanently delete:
                                 <ul className="list-disc list-inside mt-2 space-y-1">
                                   <li>Course information and settings</li>
-                                  {(course._count?.courseOutcomes || 0) > 0 && <li>{course._count.courseOutcomes} course outcomes</li>}
-                                  {(course._count?.assessments || 0) > 0 && <li>{course._count.assessments} assessments</li>}
-                                  {(course._count?.enrollments || 0) > 0 && <li>{course._count.enrollments} student enrollments</li>}
+                                  {(course._count?.courseOutcomes || 0) > 0 && <li>{course._count?.courseOutcomes || 0} course outcomes</li>}
+                                  {(course._count?.assessments || 0) > 0 && <li>{course._count?.assessments || 0} assessments</li>}
+                                  {(course._count?.enrollments || 0) > 0 && <li>{course._count?.enrollments || 0} student enrollments</li>}
                                 </ul>
                               </AlertDialogDescription>
                             </AlertDialogHeader>

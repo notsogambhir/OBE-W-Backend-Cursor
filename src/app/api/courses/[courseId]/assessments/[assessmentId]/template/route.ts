@@ -31,7 +31,7 @@ export async function GET(
       );
     }
 
-    // Validate assessment exists and belongs to course
+    // Validate assessment exists and belongs to course, include section information
     const assessment = await db.assessment.findFirst({
       where: {
         id: assessmentId,
@@ -55,6 +55,12 @@ export async function GET(
               }
             }
           }
+        },
+        section: {
+          select: {
+            id: true,
+            name: true
+          }
         }
       }
     });
@@ -66,11 +72,21 @@ export async function GET(
       );
     }
 
-    // Get enrolled students
+    // Get students enrolled in the specific section for this assessment
+    if (!assessment.sectionId) {
+      return NextResponse.json(
+        { error: 'Assessment must be associated with a section' },
+        { status: 400 }
+      );
+    }
+
     const enrollments = await db.enrollment.findMany({
       where: {
         courseId,
-        isActive: true
+        isActive: true,
+        student: {
+          sectionId: assessment.sectionId
+        }
       },
       include: {
         student: {
@@ -91,7 +107,7 @@ export async function GET(
 
     if (enrollments.length === 0) {
       return NextResponse.json(
-        { error: 'No students enrolled in this course' },
+        { error: 'No students enrolled in this section for this assessment' },
         { status: 404 }
       );
     }
@@ -103,7 +119,8 @@ export async function GET(
         name: assessment.name,
         type: assessment.type,
         maxMarks: assessment.maxMarks,
-        weightage: assessment.weightage
+        weightage: assessment.weightage,
+        section: assessment.section
       },
       questions: assessment.questions.map(q => ({
         id: q.id,

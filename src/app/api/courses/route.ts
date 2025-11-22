@@ -141,7 +141,14 @@ export async function GET(request: NextRequest) {
           courses = await db.course.findMany({
             include: {
               batch: {
-                select: { name: true, startYear: true, endYear: true }
+                include: {
+                  program: {
+                    select: {
+                      name: true,
+                      code: true
+                    }
+                  }
+                }
               },
               _count: {
                 select: {
@@ -168,7 +175,14 @@ export async function GET(request: NextRequest) {
             },
             include: {
               batch: {
-                select: { name: true, startYear: true, endYear: true }
+                include: {
+                  program: {
+                    select: {
+                      name: true,
+                      code: true
+                    }
+                  }
+                }
               },
               _count: {
                 select: {
@@ -195,7 +209,14 @@ export async function GET(request: NextRequest) {
             },
             include: {
               batch: {
-                select: { name: true, startYear: true, endYear: true }
+                include: {
+                  program: {
+                    select: {
+                      name: true,
+                      code: true
+                    }
+                  }
+                }
               },
               _count: {
                 select: {
@@ -223,7 +244,14 @@ export async function GET(request: NextRequest) {
             },
             include: {
               batch: {
-                select: { name: true, startYear: true, endYear: true }
+                include: {
+                  program: {
+                    select: {
+                      name: true,
+                      code: true
+                    }
+                  }
+                }
               },
               _count: {
                 select: {
@@ -246,7 +274,14 @@ export async function GET(request: NextRequest) {
             },
             include: {
               batch: {
-                select: { name: true, startYear: true, endYear: true }
+                include: {
+                  program: {
+                    select: {
+                      name: true,
+                      code: true
+                    }
+                  }
+                }
               },
               _count: {
                 select: {

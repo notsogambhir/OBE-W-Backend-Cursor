@@ -258,17 +258,10 @@ export function AssessmentManagement({ courseId, assessment, onClose, onUpdate }
         // Download file
         XLSX.writeFile(wb, `${assessment.name}_Marks_Template.xlsx`);
         
-        toast({
-          title: "Success",
-          description: "Template downloaded successfully",
-        });
+        toast.success("Template downloaded successfully");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download template",
-        variant: "destructive",
-      });
+      toast.error("Failed to download template");
     }
   };
 
@@ -301,18 +294,10 @@ export function AssessmentManagement({ courseId, assessment, onClose, onUpdate }
         onUpdate(); // Refresh parent data
       } else {
         const errorData = await response.json();
-        toast({
-          title: "Error",
-          description: errorData.error || "Failed to upload marks",
-          variant: "destructive",
-        });
+        toast.error(errorData.error || "Failed to upload marks");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upload marks",
-        variant: "destructive",
-      });
+      toast.error("Failed to upload marks");
     } finally {
       setUploading(false);
     }
@@ -451,18 +436,18 @@ export function AssessmentManagement({ courseId, assessment, onClose, onUpdate }
                   Download Template
                 </CardTitle>
                 <CardDescription>
-                  Download an Excel template with student IDs and question columns
+                  Download an Excel template with students from this section and question columns
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">
-                      Template includes all enrolled students and question columns
+                      Template includes students from this assessment's section and question columns
                     </p>
                     {templateData && (
                       <p className="text-xs text-gray-500 mt-1">
-                        {templateData.students.length} students • {templateData.questions.length} questions
+                        {templateData.students.length} students from {templateData.assessment?.section?.name || 'this section'} • {templateData.questions.length} questions
                       </p>
                     )}
                   </div>

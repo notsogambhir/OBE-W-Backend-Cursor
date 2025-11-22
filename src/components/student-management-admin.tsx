@@ -294,6 +294,7 @@ export function StudentManagementAdmin({ user }: { user: User }) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(formData),
       });
 
@@ -304,8 +305,18 @@ export function StudentManagementAdmin({ user }: { user: User }) {
         setEditingStudent(null);
         resetForm();
       } else {
-        const errorData = await response.json();
-        console.error('Student creation error:', errorData);
+        const errorText = await response.text();
+        console.error('Student creation error - Response text:', errorText);
+        console.error('Student creation error - Response status:', response.status);
+        console.error('Student creation error - Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
         toast.error(errorData.error || 'Failed to save student');
       }
     } catch (error) {
@@ -630,9 +641,14 @@ export function StudentManagementAdmin({ user }: { user: User }) {
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Enter password"
+                    placeholder={!editingStudent ? "Enter new password (min 3 chars)" : "Enter password (min 3 chars)"}
                     required={!editingStudent}
                   />
+                  {!editingStudent && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Password must be at least 3 characters long
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2 justify-end">

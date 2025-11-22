@@ -50,7 +50,7 @@ export async function POST(
       );
     }
 
-    // Validate assessment exists and get questions
+    // Validate assessment exists and get questions, include section information
     const assessment = await db.assessment.findFirst({
       where: {
         id: assessmentId,
@@ -61,6 +61,12 @@ export async function POST(
         questions: {
           where: { isActive: true },
           orderBy: { createdAt: 'asc' }
+        },
+        section: {
+          select: {
+            id: true,
+            name: true
+          }
         }
       }
     });
@@ -69,6 +75,13 @@ export async function POST(
       return NextResponse.json(
         { error: 'Assessment not found' },
         { status: 404 }
+      );
+    }
+
+    if (!assessment.sectionId) {
+      return NextResponse.json(
+        { error: 'Assessment must be associated with a section' },
+        { status: 400 }
       );
     }
 
@@ -86,11 +99,14 @@ export async function POST(
       );
     }
 
-    // Get enrolled students
+    // Get students enrolled in the specific section for this assessment
     const enrollments = await db.enrollment.findMany({
       where: {
         courseId,
-        isActive: true
+        isActive: true,
+        student: {
+          sectionId: assessment.sectionId
+        }
       },
       include: {
         student: {
@@ -195,7 +211,7 @@ export async function POST(
             where: {
               questionId_sectionId_studentId_academicYear: {
                 questionId: mark.questionId,
-                sectionId: mark.sectionId || null,
+                sectionId: assessment.sectionId || '',
                 studentId: result.studentId,
                 academicYear
               }
@@ -207,6 +223,7 @@ export async function POST(
             },
             create: {
               questionId: mark.questionId,
+              sectionId: assessment.sectionId || '',
               studentId: result.studentId,
               obtainedMarks: mark.obtainedMarks,
               maxMarks: mark.maxMarks,

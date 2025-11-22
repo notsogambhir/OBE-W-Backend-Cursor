@@ -144,7 +144,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedData = studentSchema.parse(body);
+    console.log('Student creation request body:', body);
+    
+    // Sanitize input data
+    const sanitizedBody = {
+      ...body,
+      studentId: body.studentId?.trim(),
+      name: body.name?.trim(),
+      email: body.email?.trim(),
+      password: body.password?.trim(),
+      collegeId: body.collegeId?.trim(),
+      programId: body.programId?.trim(),
+      batchId: body.batchId?.trim(),
+    };
+    
+    const validatedData = studentSchema.parse(sanitizedBody);
+    console.log('Validated student data:', validatedData);
 
     // Check if student ID already exists
     const existingStudent = await db.user.findUnique({
@@ -155,6 +170,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Student with this ID already exists' },
         { status: 409 }
+      );
+    }
+
+    // Validate password length
+    if (!validatedData.password || validatedData.password.length < 3) {
+      return NextResponse.json(
+        { error: 'Password must be at least 3 characters long' },
+        { status: 400 }
       );
     }
 
@@ -215,35 +238,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create the student
+    const studentPassword = validatedData.password || 'defaultPassword123';
+    
     const student = await db.user.create({
       data: {
-        ...validatedData,
-        role: 'STUDENT'
-      },
-      include: {
-        program: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-        batch: {
-          select: {
-            id: true,
-            name: true,
-            startYear: true,
-            endYear: true,
-          },
-        },
+        studentId: validatedData.studentId,
+        name: validatedData.name,
+        email: validatedData.email,
+        password: studentPassword,
+        role: 'STUDENT',
+        collegeId: validatedData.collegeId,
+        programId: validatedData.programId,
+        batchId: validatedData.batchId,
+        isActive: true,
       },
     });
+
+     // Auto-assign student to a section if the batch has sections
+    if (batch && validatedData.batchId) {
+      const sections = await db.section.findMany({
+        where: {
+          batchId: validatedData.batchId,
+          isActive: true
+        },
+        orderBy: { name: 'asc' }
+      });
+
+      if (sections.length > 0) {
+        // Assign to the first available section
+        const firstSection = sections[0];
+        await db.user.update({
+          where: { id: student.id },
+          data: {
+            sectionId: firstSection.id
+          }
+        });
+      }
+    }
 
     return NextResponse.json(student, { status: 201 });
   } catch (error) {
     console.error('Error creating student:', error);
     
     if (error instanceof ZodError) {
+      console.error('Zod validation errors:', JSON.stringify(error.issues, null, 2));
       return NextResponse.json(
         { error: 'Validation error', details: error.issues },
         { status: 400 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/server-auth';
-import { canCreateCourse } from '@/lib/permissions';
+import { canCreateCourse, canTeacherManageCourse } from '@/lib/permissions';
 
 export async function PUT(
   request: NextRequest,
@@ -36,7 +36,15 @@ export async function PUT(
         }
       });
 
-      if (!assessment || !assessment.sectionId || !(await canTeacherManageCourse(user.id, courseId, assessment.sectionId))) {
+      if (!assessment || !assessment.sectionId) {
+        return NextResponse.json(
+          { error: 'Assessment not found or not assigned to a section' },
+          { status: 404 }
+        );
+      }
+      
+      const canManage = await canTeacherManageCourse(user.id, courseId, assessment.sectionId);
+      if (!canManage) {
         return NextResponse.json(
           { error: 'Insufficient permissions to update questions for this assessment' },
           { status: 403 }
@@ -169,7 +177,15 @@ export async function DELETE(
         }
       });
 
-      if (!assessment || !assessment.sectionId || !(await canTeacherManageCourse(user.id, courseId, assessment.sectionId))) {
+      if (!assessment || !assessment.sectionId) {
+        return NextResponse.json(
+          { error: 'Assessment not found or not assigned to a section' },
+          { status: 404 }
+        );
+      }
+      
+      const canManage = await canTeacherManageCourse(user.id, courseId, assessment.sectionId);
+      if (!canManage) {
         return NextResponse.json(
           { error: 'Insufficient permissions to delete questions for this assessment' },
           { status: 403 }
