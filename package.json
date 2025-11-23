@@ -13,7 +13,8 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "db:query": "npx tsx scripts/query-db.ts",
-    "build:optimized": "NODE_OPTIONS=\"--max-old-space-size=4096\" next build"
+    "build:optimized": "NODE_OPTIONS=\"--max-old-space-size=4096\" next build",
+    "db:fix-users": "npx tsx scripts/fix-quick-login-users.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

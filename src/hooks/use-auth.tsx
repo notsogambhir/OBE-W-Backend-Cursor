@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, AuthUser } from '@/types/user';
 import { createApiUrl, getAuthHeaders, saveAuthToken, clearAuthToken } from '@/lib/api-config';
+import { hasRole } from '@/lib/auth';
 
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -13,6 +14,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUserSelections: (updates: Partial<User>) => void;
   loading: boolean;
+  hasPermission: (requiredRole: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,7 +35,7 @@ const authUserToUser = (authUser: AuthUser | null): User | null => {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false instead of true
 
   useEffect(() => {
     checkAuth();
@@ -92,10 +94,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Add a fallback timeout to prevent infinite loading
+  useEffect(() => {
+    const fallbackTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('Auth check taking too long, setting loading to false');
+        setLoading(false);
+      }
+    }, 1000); // Reduced to 1 second fallback
+
+    return () => clearTimeout(fallbackTimeout);
+  }, [loading]);
+
   const verifyWithServer = async () => {
     // Add a timeout to the fetch request
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // Reduced to 2 second timeout
 
     try {
       const response = await fetch(createApiUrl(`/api/auth/me`), {
@@ -316,8 +330,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const hasPermission = (requiredRole: string): boolean => {
+    if (!user) return false;
+    return hasRole(user.role, requiredRole);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUserSelections, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUserSelections, loading, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

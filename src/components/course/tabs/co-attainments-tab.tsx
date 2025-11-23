@@ -54,44 +54,24 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
   const [sections, setSections] = useState<any[]>([]);
 
   useEffect(() => {
-    if (courseData?.courseOutcomes) {
-      // Generate mock attainment data based on real COs
-      const mockAttainments: COAttainment[] = courseData.courseOutcomes.map((co: any) => ({
-        coId: co.id,
-        coCode: co.code,
-        coDescription: co.description,
-        targetPercentage: 60,
-        attainedPercentage: Math.floor(Math.random() * 40) + 50,
-        studentsAttained: Math.floor(Math.random() * 30) + 20,
-        totalStudents: courseData.enrollments?.length || 50,
-        attainmentLevel: Math.floor(Math.random() * 4)
-      }));
-      setAttainments(mockAttainments);
-      setLastCalculated(new Date().toLocaleString());
-    } else {
-      fetchAttainments();
-    }
+    console.log(`🔄 CO Attainments tab: Course changed to: ${courseId}`);
+    // Reset state when course changes
+    setAttainments([]);
+    setLastCalculated('');
+    setCourseSettings({
+      coTarget: 60,
+      level1Threshold: 60,
+      level2Threshold: 70,
+      level3Threshold: 80,
+    });
+    
+    fetchAttainments();
     fetchCourseSettings();
     
     // Listen for CO updates
     const handleCOUpdate = () => {
-      if (courseData?.courseOutcomes) {
-        // Refresh attainment data when COs are updated
-        const mockAttainments: COAttainment[] = courseData.courseOutcomes.map((co: any) => ({
-          coId: co.id,
-          coCode: co.code,
-          coDescription: co.description,
-          targetPercentage: 60,
-          attainedPercentage: Math.floor(Math.random() * 40) + 50,
-          studentsAttained: Math.floor(Math.random() * 30) + 20,
-          totalStudents: courseData.enrollments?.length || 50,
-          attainmentLevel: Math.floor(Math.random() * 4)
-        }));
-        setAttainments(mockAttainments);
-        setLastCalculated(new Date().toLocaleString());
-      } else {
-        fetchAttainments();
-      }
+      console.log(`🔄 CO update detected for course: ${courseId}`);
+      fetchAttainments();
     };
     
     courseEvents.on('co-updated', handleCOUpdate);
@@ -99,11 +79,33 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
     return () => {
       courseEvents.off('co-updated', handleCOUpdate);
     };
-  }, [courseId, courseData]);
+  }, [courseId]);
 
   const fetchAttainments = async () => {
     try {
-      // Mock attainment data
+      const response = await fetch(`/api/courses/${courseId}/attainments`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch attainments');
+      }
+      const data = await response.json();
+      
+      // Transform the API response to match the component interface
+      const transformedAttainments: COAttainment[] = data.coAttainments.map((co: any) => ({
+        coId: co.coId,
+        coCode: co.coCode,
+        coDescription: co.coDescription,
+        targetPercentage: co.targetPercentage,
+        attainedPercentage: co.attainedPercentage,
+        studentsAttained: co.studentsAttained,
+        totalStudents: co.totalStudents,
+        attainmentLevel: co.attainmentLevel,
+      }));
+      
+      setAttainments(transformedAttainments);
+      setLastCalculated(new Date(data.calculatedAt).toLocaleString());
+    } catch (error) {
+      console.error('Failed to fetch attainments:', error);
+      // Set mock data as fallback
       const mockAttainments: COAttainment[] = [
         {
           coId: '1',
@@ -158,43 +160,81 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
       ];
       setAttainments(mockAttainments);
       setLastCalculated(new Date().toLocaleString());
-    } catch (error) {
-      console.error('Failed to fetch attainments:', error);
     }
   };
 
   const fetchCourseSettings = async () => {
     try {
-      // Mock course settings
-      const mockSettings: CourseSettings = {
+      console.log(`🔍 Fetching course settings for CO Attainments tab, courseId: ${courseId}`);
+      const response = await fetch(`/api/courses/${courseId}/settings?t=${Date.now()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch course settings');
+      }
+      const data = await response.json();
+      console.log(`📊 Received course settings for CO Attainments tab, courseId: ${courseId}:`, data);
+      setCourseSettings({
+        coTarget: data.coTarget,
+        level1Threshold: data.level1Threshold,
+        level2Threshold: data.level2Threshold,
+        level3Threshold: data.level3Threshold,
+      });
+    } catch (error) {
+      console.error('Failed to fetch course settings:', error);
+      // Set default values as fallback
+      setCourseSettings({
         coTarget: 60,
         level1Threshold: 60,
         level2Threshold: 70,
         level3Threshold: 80,
-      };
-      setCourseSettings(mockSettings);
-    } catch (error) {
-      console.error('Failed to fetch course settings:', error);
+      });
     }
   };
 
   const calculateAttainments = async () => {
     setLoading(true);
     try {
-      // Simulate calculation process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch(`/api/courses/${courseId}/attainments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          academicYear: '2024-25',
+          force: true, // Save results to database
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to calculate attainments');
+      }
+
+      const data = await response.json();
       
-      // Recalculate attainments (mock)
-      await fetchAttainments();
+      // Transform the API response to match the component interface
+      const transformedAttainments: COAttainment[] = data.data.coAttainments.map((co: any) => ({
+        coId: co.coId,
+        coCode: co.coCode,
+        coDescription: co.coDescription,
+        targetPercentage: co.targetPercentage,
+        attainedPercentage: co.attainedPercentage,
+        studentsAttained: co.studentsAttained,
+        totalStudents: co.totalStudents,
+        attainmentLevel: co.attainmentLevel,
+      }));
+      
+      setAttainments(transformedAttainments);
+      setLastCalculated(new Date(data.data.calculatedAt).toLocaleString());
       
       toast({
         title: "Success",
         description: "CO attainments calculated successfully",
       });
     } catch (error) {
+      console.error('Failed to calculate attainments:', error);
       toast({
         title: "Error",
-        description: "Failed to calculate attainments",
+        description: error instanceof Error ? error.message : "Failed to calculate attainments",
         variant: "destructive",
       });
     } finally {

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 
 interface College {
@@ -63,6 +63,7 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   
   const [loadingPrograms, setLoadingPrograms] = useState(false);
   const [loadingBatches, setLoadingBatches] = useState(false);
+  const isInitialMount = useRef(true);
 
   // Sync with user's batchId when it changes
   useEffect(() => {
@@ -78,12 +79,18 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.programId, selectedProgram]);
 
-  // Sync with user's collegeId when it changes
+  // Initialize admin user's college on first load only
   useEffect(() => {
-    if (user?.collegeId && user.collegeId !== selectedCollege) {
+    if (isInitialMount.current && user?.role === 'ADMIN' && user.collegeId && !selectedCollege) {
       setSelectedCollege(user.collegeId);
+      isInitialMount.current = false;
     }
-  }, [user?.collegeId, selectedCollege]);
+  }, [user?.role, user?.collegeId, selectedCollege]);
+
+  // Reset initial mount flag when user changes
+  useEffect(() => {
+    isInitialMount.current = true;
+  }, [user?.id]);
 
   // Fetch colleges on mount
   useEffect(() => {

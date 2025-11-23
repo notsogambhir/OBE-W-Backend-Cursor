@@ -24,7 +24,15 @@ export async function POST(
     }
 
     // Check if user can manage this course
+    console.log('=== Bulk Questions Upload Debug ===');
+    console.log('User role:', user?.role);
+    console.log('Can manage course check result:', canManageCourse(user));
+    console.log('User ID:', user?.id);
+    console.log('Course ID:', courseId);
+    console.log('Assessment ID:', assessmentId);
+    
     if (!canManageCourse(user)) {
+      console.log('Permission check failed - returning 403');
       return NextResponse.json({ 
         error: 'Insufficient permissions. Only admin, university, department, and program coordinator roles can manage assessments.' 
       }, { status: 403 });

@@ -7,19 +7,10 @@ import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  collegeId?: string;
-  departmentId?: string;
-  programId?: string;
-  batchId?: string;
-}
-
 interface StudentBulkUploadProps {
-  user: User;
+  selectedCollege: string;
+  selectedProgram: string;
+  selectedBatch: string;
   onStudentsUploaded: () => void;
   onClose: () => void;
 }
@@ -30,7 +21,7 @@ interface UploadResult {
   duplicates: any[];
 }
 
-export function StudentBulkUpload({ user, onStudentsUploaded, onClose }: StudentBulkUploadProps) {
+export function StudentBulkUpload({ selectedCollege, selectedProgram, selectedBatch, onStudentsUploaded, onClose }: StudentBulkUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -87,11 +78,11 @@ export function StudentBulkUpload({ user, onStudentsUploaded, onClose }: Student
         };
 
         // Only include programId and batchId if they exist and are not empty
-        if (user.programId && user.programId.trim() !== '') {
-          studentData.programId = user.programId;
+        if (selectedProgram && selectedProgram.trim() !== '') {
+          studentData.programId = selectedProgram;
         }
-        if (user.batchId && user.batchId.trim() !== '') {
-          studentData.batchId = user.batchId;
+        if (selectedBatch && selectedBatch.trim() !== '') {
+          studentData.batchId = selectedBatch;
         }
 
         return studentData;
@@ -103,8 +94,8 @@ export function StudentBulkUpload({ user, onStudentsUploaded, onClose }: Student
       }
 
       // Check if user has program and batch information
-      if (!user.programId || !user.batchId) {
-        toast.error('You need to be assigned to a program and batch to upload students. Please contact your administrator.');
+      if (!selectedProgram || !selectedBatch) {
+        toast.error('You need to select a program and batch to upload students.');
         return;
       }
 

@@ -13,8 +13,6 @@ import { toast } from '@/hooks/use-toast';
 
 interface CourseSettings {
   coTarget: number;
-  internalWeightage: number;
-  externalWeightage: number;
   level1Threshold: number;
   level2Threshold: number;
   level3Threshold: number;
@@ -28,8 +26,6 @@ export function CourseOverview({ courseId }: OverviewTabProps) {
   const { user } = useAuth();
   const [settings, setSettings] = useState<CourseSettings>({
     coTarget: 60,
-    internalWeightage: 40,
-    externalWeightage: 60,
     level1Threshold: 60,
     level2Threshold: 70,
     level3Threshold: 80,
@@ -48,8 +44,6 @@ export function CourseOverview({ courseId }: OverviewTabProps) {
       // Mock data - in real app, this would be an API call
       const mockSettings: CourseSettings = {
         coTarget: 60,
-        internalWeightage: 40,
-        externalWeightage: 60,
         level1Threshold: 60,
         level2Threshold: 70,
         level3Threshold: 80,
@@ -183,63 +177,6 @@ export function CourseOverview({ courseId }: OverviewTabProps) {
               <p className="text-xs text-gray-500">
                 Minimum percentage a student must achieve to be considered successful in a CO
               </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Assessment Weightage */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Assessment Weightage
-            </CardTitle>
-            <CardDescription>
-              Define the weight distribution for assessments
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="internal-weightage">Internal Assessment</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="internal-weightage"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={settings.internalWeightage}
-                  onChange={(e) => handleInputChange('internalWeightage', parseInt(e.target.value))}
-                  disabled={!isEditing || !isProgramCoordinator}
-                  className="flex-1"
-                />
-                <span className="text-sm text-gray-600">%</span>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="external-weightage">External Assessment</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="external-weightage"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={settings.externalWeightage}
-                  onChange={(e) => handleInputChange('externalWeightage', parseInt(e.target.value))}
-                  disabled={!isEditing || !isProgramCoordinator}
-                  className="flex-1"
-                />
-                <span className="text-sm text-gray-600">%</span>
-              </div>
-            </div>
-
-            <div className="text-sm text-gray-500">
-              Total: {settings.internalWeightage + settings.externalWeightage}%
-              {settings.internalWeightage + settings.externalWeightage !== 100 && (
-                <Badge variant="destructive" className="ml-2">
-                  Must equal 100%
-                </Badge>
-              )}
             </div>
           </CardContent>
         </Card>

@@ -1,13 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+
+// Dynamically import Select components to avoid SSR issues
+const Select = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.Select })), { ssr: false });
+const SelectContent = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectContent })), { ssr: false });
+const SelectItem = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectItem })), { ssr: false });
+const SelectTrigger = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectTrigger })), { ssr: false });
+const SelectValue = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectValue })), { ssr: false });
 
 interface College {
   id: string;
@@ -261,7 +268,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('business@obeportal.com', 'department123')}
+                  onClick={() => handleQuickLogin('business@obeportal.com', 'department123', 'CBS')}
                   className="text-xs"
                 >
                   Dept Head (CBS)

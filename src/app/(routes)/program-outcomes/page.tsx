@@ -32,7 +32,11 @@ import {
   Trash2, 
   BookOpen,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  TrendingUp,
+  BarChart3,
+  Calculator,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -45,6 +49,38 @@ interface PO {
     name: string;
     code: string;
   };
+}
+
+interface POAttainment {
+  poId: string;
+  poCode: string;
+  poDescription: string;
+  targetAttainment: number;
+  actualAttainment: number;
+  coCount: number;
+  mappedCOs: number;
+  avgMappingLevel: number;
+  status: 'Not Attained' | 'Level 1' | 'Level 2' | 'Level 3';
+  coCoverageFactor: number;
+  baseAttainment: number;
+}
+
+interface ProgramPOAttainmentSummary {
+  programId: string;
+  programName: string;
+  programCode: string;
+  targetAttainment: number;
+  overallAttainment: number;
+  nbaComplianceScore: number;
+  totalPOs: number;
+  attainedPOs: number;
+  level3POs: number;
+  level2POs: number;
+  level1POs: number;
+  notAttainedPOs: number;
+  isCompliant: boolean;
+  poAttainments: POAttainment[];
+  calculatedAt: Date;
 }
 
 interface Program {
@@ -68,6 +104,11 @@ export default function ProgramOutcomesPage() {
     description: ''
   });
 
+  // PO Attainment state
+  const [poAttainmentData, setPOAttainmentData] = useState<ProgramPOAttainmentSummary | null>(null);
+  const [attainmentLoading, setAttainmentLoading] = useState(false);
+  const [lastCalculated, setLastCalculated] = useState<string>('');
+
   // Auto-suggest PO code when program changes
   useEffect(() => {
     if (newPO.programId && !newPO.code) {
@@ -90,6 +131,7 @@ export default function ProgramOutcomesPage() {
   useEffect(() => {
     if (selectedProgramId) {
       fetchPOs();
+      fetchPOAttainment();
       // Update newPO programId when selection changes (for non-program coordinators)
       if (!isProgramCoordinator) {
         setNewPO(prev => ({ ...prev, programId: selectedProgramId }));
@@ -131,6 +173,81 @@ export default function ProgramOutcomesPage() {
       console.error('Failed to fetch POs:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPOAttainment = async () => {
+    if (!selectedProgramId) return;
+    
+    setAttainmentLoading(true);
+    try {
+      const response = await fetch(`/api/programs/${selectedProgramId}/po-attainment?t=${Date.now()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPOAttainmentData(data.data);
+        setLastCalculated(new Date(data.data.calculatedAt).toLocaleString());
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to fetch PO attainment:', errorData);
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to fetch PO attainment data",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch PO attainment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch PO attainment data",
+        variant: "destructive",
+      });
+    } finally {
+      setAttainmentLoading(false);
+    }
+  };
+
+  const handleRecalculatePOAttainment = async () => {
+    if (!selectedProgramId) return;
+    
+    setAttainmentLoading(true);
+    try {
+      const response = await fetch(`/api/programs/${selectedProgramId}/po-attainment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          operation: 'RECALCULATE',
+          academicYear: '2024-25'
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPOAttainmentData(data.data);
+        setLastCalculated(new Date(data.data.calculatedAt).toLocaleString());
+        toast({
+          title: "Success",
+          description: "PO attainment recalculated successfully",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to recalculate PO attainment",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to recalculate PO attainment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to recalculate PO attainment",
+        variant: "destructive",
+      });
+    } finally {
+      setAttainmentLoading(false);
     }
   };
 
@@ -560,6 +677,181 @@ export default function ProgramOutcomesPage() {
                 </Table>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* PO Attainment Section */}
+      {selectedProgramId && poAttainmentData && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                <CardTitle>PO Attainment Analysis</CardTitle>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleRecalculatePOAttainment}
+                  disabled={attainmentLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${attainmentLoading ? 'animate-spin' : ''}`} />
+                  {attainmentLoading ? 'Calculating...' : 'Recalculate'}
+                </Button>
+              </div>
+            </div>
+            <CardDescription>
+              NBA-compliant Program Outcome attainment analysis for {programs.find(p => p.id === selectedProgramId)?.name}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {lastCalculated && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Last Calculated:</strong> {lastCalculated}
+                </p>
+              </div>
+            )}
+
+            {/* Overall Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border">
+                <div className="text-2xl font-bold text-blue-900">
+                  {poAttainmentData.overallAttainment.toFixed(1)}%
+                </div>
+                <div className="text-sm text-blue-700">Overall Attainment</div>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border">
+                <div className="text-2xl font-bold text-green-900">
+                  {poAttainmentData.nbaComplianceScore.toFixed(1)}%
+                </div>
+                <div className="text-sm text-green-700">NBA Compliance</div>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border">
+                <div className="text-2xl font-bold text-purple-900">
+                  {poAttainmentData.attainedPOs}/{poAttainmentData.totalPOs}
+                </div>
+                <div className="text-sm text-purple-700">POs Attained</div>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border">
+                <div className={`text-2xl font-bold ${poAttainmentData.isCompliant ? 'text-green-900' : 'text-red-900'}`}>
+                  {poAttainmentData.isCompliant ? '✓ Compliant' : '✗ Not Compliant'}
+                </div>
+                <div className="text-sm text-orange-700">NBA Status</div>
+              </div>
+            </div>
+
+            {/* PO Attainment Table */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold mb-4">Individual PO Attainments</h3>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>PO Code</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-center">Target</TableHead>
+                      <TableHead className="text-center">Attained</TableHead>
+                      <TableHead className="text-center">CO Coverage</TableHead>
+                      <TableHead className="text-center">Avg Mapping</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {poAttainmentData.poAttainments.map((po) => (
+                      <TableRow key={po.poId}>
+                        <TableCell>
+                          <Badge variant="outline">{po.poCode}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-xs">
+                            <p className="text-sm font-medium truncate">{po.poDescription}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-semibold">{po.targetAttainment}%</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className={`font-bold ${
+                            po.actualAttainment >= po.targetAttainment ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {po.actualAttainment.toFixed(1)}%
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <span>{po.coCoverageFactor}%</span>
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full" 
+                                style={{ width: `${po.coCoverageFactor}%` }}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-medium">{po.avgMappingLevel}</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className={
+                            po.status === 'Level 3' ? 'bg-green-100 text-green-800 border-green-200' :
+                            po.status === 'Level 2' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                            po.status === 'Level 1' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                            'bg-red-100 text-red-800 border-red-200'
+                          }>
+                            {po.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Attainment Distribution */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">
+                    {poAttainmentData.notAttainedPOs}
+                  </div>
+                  <div className="text-sm text-gray-600">Not Attained</div>
+                  <div className="text-xs text-gray-500">
+                    {poAttainmentData.totalPOs > 0 ? ((poAttainmentData.notAttainedPOs / poAttainmentData.totalPOs) * 100).toFixed(0) : 0}%
+                  </div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {poAttainmentData.level1POs}
+                  </div>
+                  <div className="text-sm text-gray-600">Level 1</div>
+                  <div className="text-xs text-gray-500">
+                    {poAttainmentData.totalPOs > 0 ? ((poAttainmentData.level1POs / poAttainmentData.totalPOs) * 100).toFixed(0) : 0}%
+                  </div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {poAttainmentData.level2POs}
+                  </div>
+                  <div className="text-sm text-gray-600">Level 2</div>
+                  <div className="text-xs text-gray-500">
+                    {poAttainmentData.totalPOs > 0 ? ((poAttainmentData.level2POs / poAttainmentData.totalPOs) * 100).toFixed(0) : 0}%
+                  </div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {poAttainmentData.level3POs}
+                  </div>
+                  <div className="text-sm text-gray-600">Level 3</div>
+                  <div className="text-xs text-gray-500">
+                    {poAttainmentData.totalPOs > 0 ? ((poAttainmentData.level3POs / poAttainmentData.totalPOs) * 100).toFixed(0) : 0}%
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { useSidebarContext } from '@/contexts/sidebar-context';
 import { NavLink } from '@/components/ui/nav-link';
+import { useAuth } from '@/hooks/use-auth';
 
 interface User {
   id: string;
@@ -44,6 +45,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSelection }: SidebarProps) {
+  const { hasPermission } = useAuth();
   const {
     selectedCollege,
     selectedProgram,
@@ -59,10 +61,10 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
   } = useSidebarContext();
 
   // Check if user is high-level (can see contextual filters)
-  const isHighLevelUser = ['ADMIN', 'UNIVERSITY', 'DEPARTMENT'].includes(user.role);
+  const isHighLevelUser = hasPermission('DEPARTMENT');
   
   // Check if user should see batch dropdown
-  const shouldSeeBatchDropdown = ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role);
+  const shouldSeeBatchDropdown = hasPermission('TEACHER');
 
   // Initialize context for department users
   useEffect(() => {
@@ -92,7 +94,7 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
       label: 'Dashboard',
       href: '/',
       icon: LayoutDashboard,
-      roles: ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR', 'TEACHER'],
+      requiredRole: 'TEACHER', // Minimum role required
     },
     // Academic Management - Admin only
     {
@@ -100,7 +102,7 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
       label: 'Academic Management',
       href: '/admin',
       icon: Wrench,
-      roles: ['ADMIN'],
+      requiredRole: 'ADMIN',
     },
     // Courses - available to all roles
     {
@@ -108,7 +110,7 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
       label: 'Courses',
       href: '/courses',
       icon: BookOpen,
-      roles: ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR', 'TEACHER'],
+      requiredRole: 'TEACHER',
     },
     // Students - available to all roles
     {
@@ -116,23 +118,23 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
       label: 'Students',
       href: '/students',
       icon: Users,
-      roles: ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR', 'TEACHER'],
+      requiredRole: 'TEACHER',
     },
-    // Faculty Management - Department, Program Coordinator, and Admin
+    // Faculty Management - Department and above
     {
       id: 'faculty-management',
       label: 'Faculty Management',
       href: '/faculty-management',
       icon: UserCheck,
-      roles: ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR'],
+      requiredRole: 'DEPARTMENT',
     },
-    // Program Outcomes - Program Coordinator, Department, University, Admin
+    // Program Outcomes - Program Coordinator and above
     {
       id: 'program-outcomes',
       label: 'Program Outcomes',
       href: '/program-outcomes',
       icon: Target,
-      roles: ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR'],
+      requiredRole: 'PROGRAM_COORDINATOR',
     },
     // User Management - Admin only
     {
@@ -140,7 +142,7 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
       label: 'User Management',
       href: '/users',
       icon: Users,
-      roles: ['ADMIN'],
+      requiredRole: 'ADMIN',
     },
     // System Settings - Admin only
     {
@@ -148,19 +150,19 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
       label: 'System Settings',
       href: '/system-settings',
       icon: Settings,
-      roles: ['ADMIN'],
+      requiredRole: 'ADMIN',
     },
     {
       id: 'academic',
       label: 'Academic Structure',
       href: '/academic',
       icon: GraduationCap,
-      roles: ['ADMIN', 'UNIVERSITY', 'DEPARTMENT'],
+      requiredRole: 'DEPARTMENT',
     },
   ];
 
   const filteredMenuItems = menuItems.filter(item => 
-    item.roles.includes(user.role)
+    hasPermission(item.requiredRole)
   );
 
   return (
@@ -203,7 +205,7 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
             )}
 
             {/* Program Dropdown - For high-level users and program coordinators/teachers */}
-            {isHighLevelUser || ['PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role) ? (
+            {isHighLevelUser || hasPermission('PROGRAM_COORDINATOR') ? (
               <div>
                 <Label htmlFor="program-select" className="text-xs font-medium text-gray-600">Program</Label>
                 <Select

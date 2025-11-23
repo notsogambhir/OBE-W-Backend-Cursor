@@ -12,8 +12,6 @@ import { toast } from '@/hooks/use-toast';
 
 interface CourseSettings {
   coTarget: number;
-  internalWeightage: number;
-  externalWeightage: number;
   level1Threshold: number;
   level2Threshold: number;
   level3Threshold: number;
@@ -28,8 +26,6 @@ export function OverviewTab({ courseId, courseData }: OverviewTabProps) {
   const { user } = useAuth();
   const [settings, setSettings] = useState<CourseSettings>({
     coTarget: 60,
-    internalWeightage: 40,
-    externalWeightage: 60,
     level1Threshold: 60,
     level2Threshold: 70,
     level3Threshold: 80,
@@ -39,24 +35,42 @@ export function OverviewTab({ courseId, courseData }: OverviewTabProps) {
 
   const isProgramCoordinator = user?.role === 'PROGRAM_COORDINATOR';
 
+  // Add effect to handle course changes
   useEffect(() => {
+    console.log(`🔄 Course changed to: ${courseId}`);
+    // Reset settings to defaults before fetching
+    setSettings({
+      coTarget: 60,
+      level1Threshold: 60,
+      level2Threshold: 70,
+      level3Threshold: 80,
+    });
+    setIsEditing(false);
     fetchCourseSettings();
   }, [courseId]);
 
   const fetchCourseSettings = async () => {
     try {
-      // [MOCK DATA] Mock data for now
-      const mockSettings: CourseSettings = {
-        coTarget: 60,
-        internalWeightage: 40,
-        externalWeightage: 60,
-        level1Threshold: 60,
-        level2Threshold: 70,
-        level3Threshold: 80,
-      };
-      setSettings(mockSettings);
+      console.log(`🔍 Fetching course settings for courseId: ${courseId}`);
+      const response = await fetch(`/api/courses/${courseId}/settings?t=${Date.now()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch course settings');
+      }
+      const data = await response.json();
+      console.log(`📊 Received course settings for ${courseId}:`, data);
+      setSettings({
+        coTarget: data.coTarget,
+        level1Threshold: data.level1Threshold,
+        level2Threshold: data.level2Threshold,
+        level3Threshold: data.level3Threshold,
+      });
     } catch (error) {
       console.error('Failed to fetch course settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch course settings",
+        variant: "destructive",
+      });
     }
   };
 
@@ -72,17 +86,33 @@ export function OverviewTab({ courseId, courseData }: OverviewTabProps) {
 
     setLoading(true);
     try {
-      // [MOCK API] Save settings to API
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      console.log(`💾 Saving course settings for courseId: ${courseId}`, settings);
+      const response = await fetch(`/api/courses/${courseId}/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update course settings');
+      }
+
+      const result = await response.json();
+      console.log(`✅ Course settings saved successfully for ${courseId}:`, result);
+
       toast({
         title: "Success",
         description: "Course settings updated successfully",
       });
       setIsEditing(false);
     } catch (error) {
+      console.error('Failed to update course settings:', error);
       toast({
         title: "Error",
-        description: "Failed to update course settings",
+        description: error instanceof Error ? error.message : "Failed to update course settings",
         variant: "destructive",
       });
     } finally {
@@ -97,6 +127,15 @@ export function OverviewTab({ courseId, courseData }: OverviewTabProps) {
 
   return (
     <div className="space-y-4">
+      {/* Debug Info - Remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs">
+          <p><strong>Debug Info:</strong></p>
+          <p>Course ID: {courseId}</p>
+          <p>Current Settings: {JSON.stringify(settings)}</p>
+        </div>
+      )}
+      
       <Card className="p-3">
         <CardHeader className="px-0 pt-0 pb-2">
           <div className="flex items-center justify-between">
@@ -129,48 +168,6 @@ export function OverviewTab({ courseId, courseData }: OverviewTabProps) {
                 disabled={!isEditing || !isProgramCoordinator}
                 className="w-20 h-7"
               />
-            </div>
-          </div>
-
-          {/* Assessment Weightage */}
-          <div className="space-y-1">
-            <Label className="flex items-center gap-2 text-xs">
-              <BarChart3 className="h-3 w-3" />
-              Assessment Weightage
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label htmlFor="internal-weightage" className="text-xs">Internal Assessment</Label>
-                <div className="flex items-center gap-1">
-                  <Input
-                    id="internal-weightage"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={settings.internalWeightage}
-                    onChange={(e) => setSettings(prev => ({ ...prev, internalWeightage: parseInt(e.target.value) || 0 }))}
-                    disabled={!isEditing || !isProgramCoordinator}
-                    className="w-16 h-7"
-                  />
-                  <span className="text-xs">%</span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="external-weightage" className="text-xs">External Assessment</Label>
-                <div className="flex items-center gap-1">
-                  <Input
-                    id="external-weightage"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={settings.externalWeightage}
-                    onChange={(e) => setSettings(prev => ({ ...prev, externalWeightage: parseInt(e.target.value) || 0 }))}
-                    disabled={!isEditing || !isProgramCoordinator}
-                    className="w-16 h-7"
-                  />
-                  <span className="text-xs">%</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -259,7 +256,7 @@ export function OverviewTab({ courseId, courseData }: OverviewTabProps) {
               <div className="text-xs text-blue-800">
                 <p className="font-medium">Course Settings</p>
                 <p className="text-blue-700">
-                  Configure CO targets and assessment weightage for outcome calculations.
+                  Configure CO targets and attainment level thresholds for outcome calculations.
                 </p>
               </div>
             </div>

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,9 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, Users, Upload, Search, Loader2, Power, PowerOff, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Upload, Search, Loader2, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import { StudentBulkUpload } from '@/components/student-bulk-upload';
+import { useAuth } from '@/hooks/use-auth';
+import { useSidebarContext } from '@/contexts/sidebar-context';
 
 interface User {
   id: string;
@@ -52,26 +54,16 @@ interface Student {
       id: string;
       name: string;
       code: string;
+      collegeId: string;
     };
   };
-  program?: {
+  section?: {
     id: string;
     name: string;
-    code: string;
   };
   _count: {
     enrollments: number;
   };
-}
-
-interface StudentFormData {
-  studentId: string;
-  name: string;
-  email: string;
-  password: string;
-  collegeId: string;
-  programId: string;
-  batchId: string;
 }
 
 interface College {
@@ -95,30 +87,31 @@ interface Batch {
   programId: string;
 }
 
-export function StudentManagementAdmin({ user }: { user: User }) {
+interface StudentFormData {
+  studentId: string;
+  name: string;
+  email: string;
+  password: string;
+  collegeId: string;
+  programId: string;
+  batchId: string;
+}
+
+export function StudentManagementAdmin({ user, viewOnly = false }: { user: User; viewOnly?: boolean }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [colleges, setColleges] = useState<College[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCollegeId, setSelectedCollegeId] = useState<string>('');
-  const [selectedProgramId, setSelectedProgramId] = useState<string>('');
-  const [selectedBatchId, setSelectedBatchId] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const [formData, setFormData] = useState<StudentFormData>({
-    studentId: '',
-    name: '',
-    email: '',
-    password: '',
-    collegeId: '',
-    programId: '',
-    batchId: '',
-  });
+  
+  // Use sidebar context
+  const { selectedCollege, selectedProgram, selectedBatch } = useSidebarContext();
 
   // Fetch colleges
   const fetchColleges = async () => {
@@ -161,19 +154,40 @@ export function StudentManagementAdmin({ user }: { user: User }) {
     }
   };
 
+  // Fetch sections
+  const fetchSections = async () => {
+    try {
+      if (selectedBatch) {
+        const response = await fetch(`/api/sections?batchId=${selectedBatch}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSections(Array.isArray(data) ? data : []);
+        }
+      } else {
+        setSections([]);
+      }
+    } catch (error) {
+      console.error('Error fetching sections:', error);
+      setSections([]);
+    }
+  };
+
   // Fetch students with filters
   const fetchStudents = async () => {
     try {
+      console.log('=== fetchStudents called ===');
       setLoading(true);
       const params = new URLSearchParams();
       
-      if (selectedCollegeId) params.append('collegeId', selectedCollegeId);
-      if (selectedProgramId) params.append('programId', selectedProgramId);
-      if (selectedBatchId) params.append('batchId', selectedBatchId);
+      if (selectedCollege) params.append('collegeId', selectedCollege);
+      if (selectedProgram) params.append('programId', selectedProgram);
+      if (selectedBatch) params.append('batchId', selectedBatch);
 
+      console.log('fetchStudents params:', params.toString());
       const response = await fetch(`/api/students?${params}`);
       if (response.ok) {
         const data = await response.json();
+        console.log('fetchStudents response:', data);
         setStudents(data);
       } else {
         console.error('Failed to fetch students');
@@ -191,104 +205,62 @@ export function StudentManagementAdmin({ user }: { user: User }) {
   }, []);
 
   useEffect(() => {
-    fetchPrograms(selectedCollegeId);
-    setSelectedProgramId('');
-    setSelectedBatchId('');
-  }, [selectedCollegeId]);
+    fetchPrograms(selectedCollege);
+  }, [selectedCollege]);
 
   useEffect(() => {
-    fetchBatches(selectedProgramId);
-    setSelectedBatchId('');
-  }, [selectedProgramId]);
+    fetchBatches(selectedProgram);
+  }, [selectedProgram]);
 
   useEffect(() => {
     fetchStudents();
-  }, [selectedCollegeId, selectedProgramId, selectedBatchId, refreshKey]);
+    fetchSections();
+  }, [selectedCollege, selectedProgram, selectedBatch, refreshKey]);
 
-  // Handle college selection change
-  const handleCollegeChange = (collegeId: string) => {
-    setSelectedCollegeId(collegeId);
-    setSelectedProgramId('');
-    setSelectedBatchId('');
-    setFormData(prev => ({
-      ...prev,
-      collegeId,
-      programId: '',
-      batchId: '',
-    }));
-  };
-
-  // Handle program selection change
-  const handleProgramChange = (programId: string) => {
-    setSelectedProgramId(programId);
-    setSelectedBatchId('');
-    setFormData(prev => ({
-      ...prev,
-      programId,
-      batchId: '',
-    }));
-  };
-
-  // Handle batch selection change
-  const handleBatchChange = (batchId: string) => {
-    setSelectedBatchId(batchId);
-    setFormData(prev => ({
-      ...prev,
-      batchId,
-    }));
-  };
-
-  // Check if user can upload students
-  const canUploadStudents = selectedCollegeId && selectedProgramId && selectedBatchId;
-
-  // Filter students based on search term
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (student.email && student.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Additional effect to ensure refresh after bulk upload
+  useEffect(() => {
+    if (refreshKey > 0) {
+      fetchStudents();
+    }
+  }, [refreshKey]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent form submission for view-only users
+    if (viewOnly) {
+      toast.error('You have view-only access and cannot perform this action');
+      return;
+    }
+    
     // Validate that all required fields are selected
-    if (!formData.collegeId || formData.collegeId.trim() === '') {
+    if (!selectedCollege || selectedCollege.trim() === '') {
       toast.error('Please select a college');
       return;
     }
-
-    if (!formData.programId || formData.programId.trim() === '') {
+    if (!selectedProgram || selectedProgram.trim() === '') {
       toast.error('Please select a program');
       return;
     }
-
-    if (!formData.batchId || formData.batchId.trim() === '') {
+    if (!selectedBatch || selectedBatch.trim() === '') {
       toast.error('Please select a batch');
-      return;
-    }
-
-    if (!formData.studentId.trim() || !formData.name.trim()) {
-      toast.error('Student ID and Name are required');
-      return;
-    }
-
-    if (!editingStudent && !formData.email.trim()) {
-      toast.error('Email is required for new students');
-      return;
-    }
-
-    if (!editingStudent && !formData.password.trim()) {
-      toast.error('Password is required for new students');
       return;
     }
     
     try {
       const url = editingStudent ? `/api/students/${editingStudent.id}` : '/api/students';
       const method = editingStudent ? 'PUT' : 'POST';
-
-      console.log('Submitting student data:', formData);
-
+      
+      console.log('Submitting student data:', {
+        studentId: formData.studentId,
+        name: formData.name,
+        email: formData.email,
+        collegeId: selectedCollege,
+        programId: selectedProgram,
+        batchId: selectedBatch,
+      });
+      
       const response = await fetch(url, {
         method,
         headers: {
@@ -297,7 +269,7 @@ export function StudentManagementAdmin({ user }: { user: User }) {
         credentials: 'include',
         body: JSON.stringify(formData),
       });
-
+      
       if (response.ok) {
         toast.success(editingStudent ? 'Student updated successfully!' : 'Student created successfully!');
         setRefreshKey(prev => prev + 1);
@@ -334,8 +306,9 @@ export function StudentManagementAdmin({ user }: { user: User }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ isActive: !currentStatus }),
+        disabled: viewOnly,
       });
-
+      
       if (response.ok) {
         const updatedStudent = await response.json();
         setStudents(prev => 
@@ -363,8 +336,9 @@ export function StudentManagementAdmin({ user }: { user: User }) {
     try {
       const response = await fetch(`/api/students/${studentId}`, {
         method: 'DELETE',
+        disabled: viewOnly,
       });
-
+      
       if (response.ok) {
         toast.success('Student deleted successfully!');
         setRefreshKey(prev => prev + 1);
@@ -386,9 +360,9 @@ export function StudentManagementAdmin({ user }: { user: User }) {
       name: student.name,
       email: student.email || '',
       password: '',
-      collegeId: student.batch?.program.collegeId || student.college?.id || '',
-      programId: student.batch?.programId || student.program?.id || '',
-      batchId: student.batch?.id || '',
+      collegeId: selectedCollege,
+      programId: selectedProgram,
+      batchId: selectedBatch,
     });
     setShowCreateForm(true);
   };
@@ -400,17 +374,79 @@ export function StudentManagementAdmin({ user }: { user: User }) {
       name: '',
       email: '',
       password: '',
-      collegeId: selectedCollegeId,
-      programId: selectedProgramId,
-      batchId: selectedBatchId,
+      collegeId: selectedCollege,
+      programId: selectedProgram,
+      batchId: selectedBatch,
     });
     setEditingStudent(null);
   };
 
   // Handle bulk upload completion
   const handleBulkUploadComplete = () => {
+    console.log('=== handleBulkUploadComplete called ===');
     setRefreshKey(prev => prev + 1);
     setShowBulkUpload(false);
+    // Immediately trigger a refresh
+    setTimeout(() => {
+      fetchStudents();
+    }, 100);
+  };
+
+  // Check if user can upload students
+  const canUploadStudents = selectedCollege && selectedProgram && selectedBatch;
+
+  // Filter students based on search term
+  const filteredStudents = students.filter(student =>
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (student.email && student.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Note: College, Program, and Batch selection are handled by sidebar context
+
+  const [formData, setFormData] = useState<StudentFormData>({
+    studentId: '',
+    name: '',
+    email: '',
+    password: '',
+    collegeId: '',
+    programId: '',
+    batchId: '',
+  });
+
+  // Handle section assignment
+  const handleSectionChange = async (studentId: string, sectionId: string) => {
+    try {
+      const response = await fetch(`/api/students/${studentId}/section`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sectionId: sectionId === 'none' ? null : sectionId }),
+      });
+
+      if (response.ok) {
+        // Refresh students data
+        fetchStudents();
+        toast({
+          title: 'Section Updated',
+          description: 'Student section assignment updated successfully.',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to update student section.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error updating student section:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update student section.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -431,6 +467,7 @@ export function StudentManagementAdmin({ user }: { user: User }) {
               }
               setShowBulkUpload(!showBulkUpload);
               setShowCreateForm(false);
+              resetForm();
             }}
             variant="outline"
             className="flex items-center gap-2"
@@ -449,6 +486,7 @@ export function StudentManagementAdmin({ user }: { user: User }) {
               setShowBulkUpload(false);
               resetForm();
             }}
+            variant="outline"
             className="flex items-center gap-2"
             disabled={!canUploadStudents}
           >
@@ -458,272 +496,49 @@ export function StudentManagementAdmin({ user }: { user: User }) {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label htmlFor="college">College</Label>
-              <Select value={selectedCollegeId} onValueChange={handleCollegeChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Colleges" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Colleges</SelectItem>
-                  {colleges.map((college) => (
-                    <SelectItem key={college.id} value={college.id}>
-                      {college.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="program">Program</Label>
-              <Select value={selectedProgramId} onValueChange={handleProgramChange} disabled={!selectedCollegeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select college first" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Programs</SelectItem>
-                  {programs.map((program) => (
-                    <SelectItem key={program.id} value={program.id}>
-                      {program.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="batch">Batch</Label>
-              <Select value={selectedBatchId} onValueChange={handleBatchChange} disabled={!selectedProgramId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select program first" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Batches</SelectItem>
-                  {batches.map((batch) => (
-                    <SelectItem key={batch.id} value={batch.id}>
-                      {batch.name} ({batch.startYear}-{batch.endYear})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="search"
-                  placeholder="Search by name, ID, or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <CardContent className="pt-6">
+          <div className="max-w-md">
+            <Label htmlFor="search">Search Students</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, ID, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {showBulkUpload && (
-        <StudentBulkUpload
-          user={{
-            ...user,
-            collegeId: selectedCollegeId,
-            programId: selectedProgramId,
-            batchId: selectedBatchId,
-          }}
-          onStudentsUploaded={handleBulkUploadComplete}
-          onClose={() => setShowBulkUpload(false)}
-        />
-      )}
-
-      {showCreateForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {editingStudent ? 'Edit Student' : 'Add New Student'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="college">College *</Label>
-                  <Select value={formData.collegeId} onValueChange={(value) => setFormData({ ...formData, collegeId: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select college" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {colleges.map((college) => (
-                        <SelectItem key={college.id} value={college.id}>
-                          {college.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="program">Program *</Label>
-                  <Select value={formData.programId} onValueChange={(value) => setFormData({ ...formData, programId: value })} disabled={!formData.collegeId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select college first" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {programs.filter(p => !formData.collegeId || p.collegeId === formData.collegeId).map((program) => (
-                        <SelectItem key={program.id} value={program.id}>
-                          {program.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="batch">Batch *</Label>
-                  <Select value={formData.batchId} onValueChange={(value) => setFormData({ ...formData, batchId: value })} disabled={!formData.programId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select program first" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {batches.filter(b => !formData.programId || b.programId === formData.programId).map((batch) => (
-                        <SelectItem key={batch.id} value={batch.id}>
-                          {batch.name} ({batch.startYear}-{batch.endYear})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="studentId">Student ID *</Label>
-                  <Input
-                    id="studentId"
-                    type="text"
-                    value={formData.studentId}
-                    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                    placeholder="e.g. CS101001"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="name">Student Name *</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. John Doe"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email {!editingStudent && '*'}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="e.g. student@example.com"
-                    required={!editingStudent}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">Password {!editingStudent && '*'}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder={!editingStudent ? "Enter new password (min 3 chars)" : "Enter password (min 3 chars)"}
-                    required={!editingStudent}
-                  />
-                  {!editingStudent && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Password must be at least 3 characters long
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Saving...' : (editingStudent ? 'Update Student' : 'Create Student')}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Students List */}
+      {/* Student List */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Students</CardTitle>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline">
-                  {filteredStudents.length} Students
-                </Badge>
-                {selectedCollegeId && (
-                  <Badge variant="secondary">
-                    {colleges.find(c => c.id === selectedCollegeId)?.name || 'Selected College'}
-                  </Badge>
-                )}
-                {selectedProgramId && (
-                  <Badge variant="secondary">
-                    {programs.find(p => p.id === selectedProgramId)?.name || 'Selected Program'}
-                  </Badge>
-                )}
-                {selectedBatchId && (
-                  <Badge variant="secondary">
-                    {batches.find(b => b.id === selectedBatchId)?.name || 'Selected Batch'}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
+          <CardTitle>
+            Student List ({filteredStudents.length} / {students.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-gray-500">Loading students...</p>
-            </div>
-          ) : filteredStudents.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Found</h3>
-              <p className="text-gray-600 mb-4">
-                {searchTerm ? 'No students match your search criteria' : 'No students found for the selected filters'}
-              </p>
-              {canUploadStudents && (
-                <Button onClick={() => setShowCreateForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add First Student
-                </Button>
-              )}
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <p className="ml-2 text-muted-foreground">Loading students...</p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Student Name</TableHead>
                     <TableHead>Student ID</TableHead>
-                    <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>College</TableHead>
                     <TableHead>Program</TableHead>
                     <TableHead>Batch</TableHead>
+                    <TableHead>Section</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -731,20 +546,37 @@ export function StudentManagementAdmin({ user }: { user: User }) {
                 <TableBody>
                   {filteredStudents.map((student) => (
                     <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.studentId}</TableCell>
                       <TableCell>{student.name}</TableCell>
+                      <TableCell>{student.studentId}</TableCell>
                       <TableCell>{student.email || '-'}</TableCell>
+                      <TableCell>{student.college?.name || '-'}</TableCell>
+                      <TableCell>{student.program?.name || '-'}</TableCell>
+                      <TableCell>{student.batch?.name || '-'}</TableCell>
                       <TableCell>
-                        {student.college?.name || student.batch?.program.college?.name || '-'}
+                        {viewOnly ? (
+                          <span>{student.section?.name || '-'}</span>
+                        ) : (
+                          <Select
+                            value={student.section?.id || 'none'}
+                            onValueChange={(value) => handleSectionChange(student.id, value)}
+                            disabled={!selectedBatch}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue placeholder="No section" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Section</SelectItem>
+                              {sections.map((section) => (
+                                <SelectItem key={section.id} value={section.id}>
+                                  {section.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {student.program?.name || student.batch?.program?.name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {student.batch?.name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={student.isActive ? "default" : "secondary"} className="text-xs">
+                        <Badge variant={student.isActive ? "default" : "secondary"}>
                           {student.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
@@ -754,6 +586,7 @@ export function StudentManagementAdmin({ user }: { user: User }) {
                             variant="outline"
                             size="sm"
                             onClick={() => handleEdit(student)}
+                            disabled={viewOnly}
                             className="flex items-center gap-1"
                           >
                             <Edit className="h-3 w-3" />
@@ -763,15 +596,17 @@ export function StudentManagementAdmin({ user }: { user: User }) {
                             variant="outline"
                             size="sm"
                             onClick={() => handleToggleStatus(student.id, student.isActive)}
+                            disabled={viewOnly}
                             className={`flex items-center gap-1 ${student.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}`}
                           >
-                            {student.isActive ? <PowerOff className="h-3 w-3" /> : <Power className="h-3 w-3" />}
+                            {student.isActive ? <Power className="h-3 w-3" /> : <Power className="h-3 w-3" />}
                             {student.isActive ? 'Deactivate' : 'Activate'}
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDelete(student.id, student.name)}
+                            disabled={viewOnly}
                             className="flex items-center gap-1 text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -787,6 +622,84 @@ export function StudentManagementAdmin({ user }: { user: User }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Bulk Upload Dialog */}
+      {showBulkUpload && (
+        <StudentBulkUpload
+          selectedCollege={selectedCollege}
+          selectedProgram={selectedProgram}
+          selectedBatch={selectedBatch}
+          onComplete={handleBulkUploadComplete}
+          onClose={() => setShowBulkUpload(false)}
+        />
+      )}
+
+      {/* Create/Edit Student Dialog */}
+      {showCreateForm && (
+        <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {editingStudent ? 'Edit Student' : 'Add New Student'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="studentId">Student ID *</Label>
+                  <Input
+                    id="studentId"
+                    placeholder="Enter student ID"
+                    value={formData.studentId}
+                    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="name">Student Name *</Label>
+                  <Input
+                    id="name"
+                    placeholder="Enter student name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter student email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required={editingStudent ? false : true}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter password (for new students only)"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required={editingStudent ? false : true}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Saving...' : (editingStudent ? 'Update' : 'Create')}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
