@@ -5,10 +5,28 @@ import { verifyToken } from '@/lib/auth';
 // PUT /api/students/[studentId]/section - Assign student to a section
 export async function PUT(
   request: NextRequest,
+  { params }: { params: { studentId: string } }
+) {
+  return handleSectionUpdate(request, params);
+}
+
+// PATCH /api/students/[studentId]/section - Update student section assignment
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { studentId: string } }
+) {
+  return handleSectionUpdate(request, params);
+}
+
+// Common handler for both PUT and PATCH
+async function handleSectionUpdate(
+  request: NextRequest,
   { params }: { params: Promise<{ studentId: string }> }
 ) {
   try {
+    console.log('Raw params:', params);
     const resolvedParams = await params;
+    console.log('Resolved params:', resolvedParams);
     const studentId = resolvedParams.studentId;
 
     // Try to get token from Authorization header first, then fallback to cookie
@@ -22,22 +40,30 @@ export async function PUT(
     }
 
     const user = verifyToken(token);
+    console.log('User from token:', { id: user?.id, role: user?.role, collegeId: user?.collegeId });
+    
     if (!user) {
+      console.log('Invalid token - returning 401');
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     const { sectionId } = await request.json();
+    console.log('Requested sectionId:', sectionId);
 
     if (sectionId === undefined) {
+      console.log('Section ID undefined - returning 400');
       return NextResponse.json({ error: 'Section ID is required' }, { status: 400 });
     }
 
     // Check permissions - Admin, University, and Department can assign students to sections
+    console.log('Checking permissions for user role:', user.role);
     if (!['ADMIN', 'UNIVERSITY', 'DEPARTMENT'].includes(user.role)) {
+      console.log('Insufficient permissions - returning 403');
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     // Get the student to verify they exist and get their batch info
+    console.log('Looking up student with ID:', studentId);
     const student = await db.user.findUnique({
       where: { id: studentId },
       include: {
@@ -53,6 +79,12 @@ export async function PUT(
       }
     });
 
+    console.log('Found student:', student);
+    console.log('Student role:', student?.role);
+    console.log('Student batch:', student?.batch);
+    console.log('Student batch program:', student?.batch?.program);
+    console.log('Student batch program college:', student?.batch?.program?.college);
+
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
@@ -63,7 +95,12 @@ export async function PUT(
 
     // For Department role, check if they have access to this batch
     if (user?.role === 'DEPARTMENT') {
+      console.log('Department access check:');
+      console.log('Student batch college ID:', student?.batch?.program?.collegeId);
+      console.log('User college ID:', user?.collegeId);
+      
       if (student?.batch?.program?.collegeId !== user?.collegeId) {
+        console.log('Department access denied - college mismatch');
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }
@@ -102,6 +139,7 @@ export async function PUT(
       }
     });
 
+    console.log('Student updated successfully:', updatedStudent);
     return NextResponse.json(updatedStudent);
   } catch (error) {
     console.error('Student section assignment error:', error);

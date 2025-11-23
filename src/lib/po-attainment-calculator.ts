@@ -34,7 +34,165 @@ export interface ProgramPOAttainmentSummary {
   calculatedAt: Date;
 }
 
+export interface BatchPOAttainmentSummary {
+  batchId: string;
+  batchName: string;
+  batchStartYear: number;
+  batchEndYear: number;
+  programId: string;
+  programName: string;
+  programCode: string;
+  targetAttainment: number;
+  overallAttainment: number;
+  nbaComplianceScore: number;
+  totalPOs: number;
+  attainedPOs: number;
+  level3POs: number;
+  level2POs: number;
+  level1POs: number;
+  notAttainedPOs: number;
+  isCompliant: boolean;
+  poAttainments: POAttainment[];
+  totalCourses: number;
+  completedCourses: number;
+  calculatedAt: Date;
+}
+
 export class POAttainmentCalculator {
+  /**
+   * Calculate PO attainment for a specific batch
+   * Following NBA guidelines for Program Outcome attainment at batch level
+   */
+  static async calculateBatchPOAttainment(
+    batchId: string,
+    options?: {
+      academicYear?: string;
+      includeInactiveCourses?: boolean;
+      courseStatus?: CourseStatus[];
+    }
+  ): Promise<BatchPOAttainmentSummary | null> {
+    try {
+      console.log(`🎯 Calculating PO attainment for batch: ${batchId}`);
+
+      // Default to COMPLETED courses only for PO attainment calculation as per NBA guidelines
+      const allowedStatuses = options?.courseStatus || ['COMPLETED'];
+      console.log(`📚 Using courses with status: ${allowedStatuses.join(', ')} for batch PO calculation`);
+
+      // Get batch details with courses
+      const batch = await db.batch.findUnique({
+        where: { id: batchId },
+        include: {
+          program: {
+            include: {
+              college: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          },
+          courses: {
+            where: { 
+              status: { in: allowedStatuses },
+              ...(options?.includeInactiveCourses ? {} : { isActive: true })
+            },
+            include: {
+              courseOutcomes: {
+                where: { isActive: true }
+              },
+              coPOMappings: {
+                where: { isActive: true },
+                include: {
+                  co: true,
+                  po: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!batch) {
+        console.log(`❌ Batch not found: ${batchId}`);
+        return null;
+      }
+
+      // Get all POs for the batch's program
+      const pos = await db.pO.findMany({
+        where: { 
+          programId: batch.programId,
+          isActive: true 
+        },
+        orderBy: { code: 'asc' }
+      });
+
+      if (pos.length === 0) {
+        console.log(`❌ No POs found for batch's program: ${batch.programId}`);
+        return null;
+      }
+
+      const totalCourses = batch.courses.length;
+      console.log(`📚 Found ${pos.length} POs and ${totalCourses} courses for batch calculation`);
+      
+      // Calculate PO attainment for each PO using only this batch's courses
+      const poAttainments: POAttainment[] = [];
+
+      for (const po of pos) {
+        const poAttainment = await this.calculateIndividualPOAttainment(
+          po,
+          batch.courses, // Only courses from this batch
+          batch.programId
+        );
+        
+        if (poAttainment) {
+          poAttainments.push(poAttainment);
+        }
+      }
+
+      // Calculate overall statistics
+      const targetAttainment = 60; // NBA standard
+      const overallAttainment = poAttainments.length > 0 
+        ? poAttainments.reduce((sum, po) => sum + po.actualAttainment, 0) / poAttainments.length 
+        : 0;
+
+      const nbaComplianceScore = poAttainments.length > 0 
+        ? (poAttainments.filter(po => po.actualAttainment >= targetAttainment).length / poAttainments.length) * 100 
+        : 0;
+
+      const summary: BatchPOAttainmentSummary = {
+        batchId: batch.id,
+        batchName: batch.name,
+        batchStartYear: batch.startYear,
+        batchEndYear: batch.endYear,
+        programId: batch.program.id,
+        programName: batch.program.name,
+        programCode: batch.program.code,
+        targetAttainment,
+        overallAttainment: Math.round(overallAttainment * 100) / 100,
+        nbaComplianceScore: Math.round(nbaComplianceScore * 100) / 100,
+        totalPOs: pos.length,
+        attainedPOs: poAttainments.filter(po => po.actualAttainment >= targetAttainment).length,
+        level3POs: poAttainments.filter(po => po.status === 'Level 3').length,
+        level2POs: poAttainments.filter(po => po.status === 'Level 2').length,
+        level1POs: poAttainments.filter(po => po.status === 'Level 1').length,
+        notAttainedPOs: poAttainments.filter(po => po.status === 'Not Attained').length,
+        isCompliant: nbaComplianceScore >= 60, // NBA requires minimum 60% compliance
+        poAttainments,
+        totalCourses,
+        completedCourses: totalCourses, // All courses are completed due to filtering
+        calculatedAt: new Date()
+      };
+
+      console.log(`✅ Batch PO attainment calculation completed for batch: ${batchId}`);
+      console.log(`📊 Batch Summary: ${summary.overallAttainment}% overall, ${summary.nbaComplianceScore}% NBA compliance`);
+
+      return summary;
+    } catch (error) {
+      console.error('❌ Error calculating batch PO attainment:', error);
+      return null;
+    }
+  }
+
   /**
    * Calculate PO attainment for a specific program
    * Following NBA guidelines for Program Outcome attainment
@@ -50,8 +208,8 @@ export class POAttainmentCalculator {
     try {
       console.log(`🎯 Calculating PO attainment for program: ${programId}`);
 
-      // Default to COMPLETED courses for PO attainment calculation, but include ACTIVE for testing
-      const allowedStatuses = options?.courseStatus || ['COMPLETED', 'ACTIVE', 'FUTURE'];
+      // Default to COMPLETED courses only for PO attainment calculation as per NBA guidelines
+      const allowedStatuses = options?.courseStatus || ['COMPLETED'];
       console.log(`📚 Using courses with status: ${allowedStatuses.join(', ')} for PO calculation`);
       
       // Get program details
@@ -307,6 +465,25 @@ export class POAttainmentCalculator {
       if (!course) {
         console.log(`❌ Course not found: ${courseId}`);
         return null;
+      }
+
+      // Check if course is completed - only calculate PO attainment for completed courses
+      if (course.status !== 'COMPLETED') {
+        console.log(`⚠️ Course ${courseId} is not completed (status: ${course.status}). PO attainment calculation skipped.`);
+        return {
+          courseId: course.id,
+          courseCode: course.code,
+          courseName: course.name,
+          courseStatus: course.status,
+          message: 'PO attainment calculation only available for completed courses',
+          poAttainments: [],
+          overallAttainment: 0,
+          nbaComplianceScore: 0,
+          targetAttainment: 60,
+          totalPOs: 0,
+          attainedPOs: 0,
+          isCompliant: false
+        };
       }
 
       // Get POs for the program

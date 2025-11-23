@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useSidebarContext } from '@/contexts/sidebar-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +37,9 @@ import {
   TrendingUp,
   BarChart3,
   Calculator,
-  RefreshCw
+  RefreshCw,
+  Users,
+  Calendar
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -83,6 +86,30 @@ interface ProgramPOAttainmentSummary {
   calculatedAt: Date;
 }
 
+interface BatchPOAttainmentSummary {
+  batchId: string;
+  batchName: string;
+  batchStartYear: number;
+  batchEndYear: number;
+  programId: string;
+  programName: string;
+  programCode: string;
+  targetAttainment: number;
+  overallAttainment: number;
+  nbaComplianceScore: number;
+  totalPOs: number;
+  attainedPOs: number;
+  level3POs: number;
+  level2POs: number;
+  level1POs: number;
+  notAttainedPOs: number;
+  isCompliant: boolean;
+  poAttainments: POAttainment[];
+  totalCourses: number;
+  completedCourses: number;
+  calculatedAt: Date;
+}
+
 interface Program {
   id: string;
   name: string;
@@ -91,6 +118,7 @@ interface Program {
 
 export default function ProgramOutcomesPage() {
   const { user } = useAuth();
+  const { selectedCollege, selectedProgram, selectedBatch, batches } = useSidebarContext();
   const [pos, setPOs] = useState<PO[]>([]);
   const [allPOs, setAllPOs] = useState<PO[]>([]); // For code generation
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -106,8 +134,10 @@ export default function ProgramOutcomesPage() {
 
   // PO Attainment state
   const [poAttainmentData, setPOAttainmentData] = useState<ProgramPOAttainmentSummary | null>(null);
+  const [batchPOAttainmentData, setBatchPOAttainmentData] = useState<BatchPOAttainmentSummary | null>(null);
   const [attainmentLoading, setAttainmentLoading] = useState(false);
   const [lastCalculated, setLastCalculated] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'program' | 'batch'>('program'); // New view mode state
 
   // Auto-suggest PO code when program changes
   useEffect(() => {
@@ -131,13 +161,48 @@ export default function ProgramOutcomesPage() {
   useEffect(() => {
     if (selectedProgramId) {
       fetchPOs();
-      fetchPOAttainment();
+      if (viewMode === 'program') {
+        fetchPOAttainment();
+      } else if (viewMode === 'batch' && selectedBatch) {
+        fetchBatchPOAttainment();
+      }
       // Update newPO programId when selection changes (for non-program coordinators)
       if (!isProgramCoordinator) {
         setNewPO(prev => ({ ...prev, programId: selectedProgramId }));
       }
     }
-  }, [selectedProgramId, isProgramCoordinator]);
+  }, [selectedProgramId, selectedBatch, viewMode, isProgramCoordinator]);
+
+  const fetchBatchPOAttainment = async () => {
+    if (!selectedBatch) return;
+    
+    setAttainmentLoading(true);
+    try {
+      const response = await fetch(`/api/batches/${selectedBatch}/po-attainment?t=${Date.now()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setBatchPOAttainmentData(data.data);
+        setLastCalculated(new Date(data.data.calculatedAt).toLocaleString());
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to fetch batch PO attainment:', errorData);
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to fetch batch PO attainment data",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch batch PO attainment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch batch PO attainment data",
+        variant: "destructive",
+      });
+    } finally {
+      setAttainmentLoading(false);
+    }
+  };
 
   const fetchPrograms = async () => {
     try {
@@ -244,6 +309,50 @@ export default function ProgramOutcomesPage() {
       toast({
         title: "Error",
         description: "Failed to recalculate PO attainment",
+        variant: "destructive",
+      });
+    } finally {
+      setAttainmentLoading(false);
+    }
+  };
+
+  const handleRecalculateBatchPOAttainment = async () => {
+    if (!selectedBatch) return;
+    
+    setAttainmentLoading(true);
+    try {
+      const response = await fetch(`/api/batches/${selectedBatch}/po-attainment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          operation: 'RECALCULATE',
+          academicYear: '2024-25'
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBatchPOAttainmentData(data.data);
+        setLastCalculated(new Date(data.data.calculatedAt).toLocaleString());
+        toast({
+          title: "Success",
+          description: "Batch PO attainment recalculated successfully",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to recalculate batch PO attainment",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to recalculate batch PO attainment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to recalculate batch PO attainment",
         variant: "destructive",
       });
     } finally {
@@ -681,20 +790,102 @@ export default function ProgramOutcomesPage() {
         </Card>
       )}
 
+      {/* View Mode & Batch Selection */}
+      {selectedProgramId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              Analysis Scope
+            </CardTitle>
+            <CardDescription>
+              Choose between program-level or batch-level PO attainment analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* View Mode Selection */}
+              <div className="space-y-2">
+                <Label>Analysis Level</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={viewMode === 'program' ? 'default' : 'outline'}
+                    onClick={() => setViewMode('program')}
+                    className="flex-1"
+                  >
+                    <Target className="h-4 w-4 mr-2" />
+                    Program Level
+                  </Button>
+                  <Button
+                    variant={viewMode === 'batch' ? 'default' : 'outline'}
+                    onClick={() => setViewMode('batch')}
+                    className="flex-1"
+                    disabled={!selectedProgramId}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Batch Level
+                  </Button>
+                </div>
+              </div>
+
+              {/* Batch Selection - Only show in batch mode */}
+              {viewMode === 'batch' && (
+                <div className="space-y-2">
+                  <Label>Select Batch</Label>
+                  <Select
+                    value={selectedBatch || ''}
+                    onValueChange={(value) => {
+                      if (value) {
+                        // This will trigger useEffect to fetch batch PO attainment
+                        setViewMode('batch');
+                      }
+                    }}
+                    disabled={!selectedProgramId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {batches
+                        .filter(batch => batch.programId === selectedProgramId)
+                        .map((batch) => (
+                          <SelectItem key={batch.id} value={batch.id}>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              <span>{batch.name} ({batch.startYear}-{batch.endYear})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedBatch && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      Showing PO attainment for: <strong>{batches.find(b => b.id === selectedBatch)?.name}</strong>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* PO Attainment Section */}
-      {selectedProgramId && poAttainmentData && (
+      {selectedProgramId && ((viewMode === 'program' && poAttainmentData) || (viewMode === 'batch' && batchPOAttainmentData)) && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-blue-600" />
-                <CardTitle>PO Attainment Analysis</CardTitle>
+                <CardTitle>
+                  {viewMode === 'batch' ? 'Batch PO Attainment Analysis' : 'Program PO Attainment Analysis'}
+                </CardTitle>
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={handleRecalculatePOAttainment}
-                  disabled={attainmentLoading}
+                  onClick={viewMode === 'program' ? handleRecalculatePOAttainment : handleRecalculateBatchPOAttainment}
+                  disabled={attainmentLoading || (viewMode === 'batch' && !selectedBatch)}
                 >
                   <RefreshCw className={`h-4 w-4 mr-2 ${attainmentLoading ? 'animate-spin' : ''}`} />
                   {attainmentLoading ? 'Calculating...' : 'Recalculate'}
@@ -702,7 +893,10 @@ export default function ProgramOutcomesPage() {
               </div>
             </div>
             <CardDescription>
-              NBA-compliant Program Outcome attainment analysis for {programs.find(p => p.id === selectedProgramId)?.name}
+              {viewMode === 'batch' 
+                ? `NBA-compliant Batch PO attainment analysis for ${batches.find(b => b.id === selectedBatch)?.name} (${programs.find(p => p.id === selectedProgramId)?.name})`
+                : `NBA-compliant Program Outcome attainment analysis for ${programs.find(p => p.id === selectedProgramId)?.name}`
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -718,32 +912,53 @@ export default function ProgramOutcomesPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border">
                 <div className="text-2xl font-bold text-blue-900">
-                  {poAttainmentData.overallAttainment.toFixed(1)}%
+                  {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.overallAttainment.toFixed(1) || '0.0'}%
                 </div>
                 <div className="text-sm text-blue-700">Overall Attainment</div>
               </div>
               
               <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border">
                 <div className="text-2xl font-bold text-green-900">
-                  {poAttainmentData.nbaComplianceScore.toFixed(1)}%
+                  {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.nbaComplianceScore.toFixed(1) || '0.0'}%
                 </div>
                 <div className="text-sm text-green-700">NBA Compliance</div>
               </div>
               
               <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border">
                 <div className="text-2xl font-bold text-purple-900">
-                  {poAttainmentData.attainedPOs}/{poAttainmentData.totalPOs}
+                  {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.attainedPOs || 0}/{(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 0}
                 </div>
                 <div className="text-sm text-purple-700">POs Attained</div>
               </div>
               
               <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border">
-                <div className={`text-2xl font-bold ${poAttainmentData.isCompliant ? 'text-green-900' : 'text-red-900'}`}>
-                  {poAttainmentData.isCompliant ? '✓ Compliant' : '✗ Not Compliant'}
+                <div className={`text-2xl font-bold ${(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.isCompliant ? 'text-green-900' : 'text-red-900'}`}>
+                  {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.isCompliant ? '✓ Compliant' : '✗ Not Compliant'}
                 </div>
                 <div className="text-sm text-orange-700">NBA Status</div>
               </div>
             </div>
+
+            {/* Batch Information - Only show in batch mode */}
+            {viewMode === 'batch' && batchPOAttainmentData && (
+              <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Batch Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-sm text-gray-600">Batch Name</div>
+                    <div className="font-medium">{batchPOAttainmentData.batchName}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600">Academic Year</div>
+                    <div className="font-medium">{batchPOAttainmentData.batchStartYear} - {batchPOAttainmentData.batchEndYear}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600">Courses Analyzed</div>
+                    <div className="font-medium">{batchPOAttainmentData.completedCourses} / {batchPOAttainmentData.totalCourses}</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* PO Attainment Table */}
             <div className="space-y-4">
@@ -762,7 +977,7 @@ export default function ProgramOutcomesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {poAttainmentData.poAttainments.map((po) => (
+                    {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.poAttainments.map((po) => (
                       <TableRow key={po.poId}>
                         <TableCell>
                           <Badge variant="outline">{po.poCode}</Badge>

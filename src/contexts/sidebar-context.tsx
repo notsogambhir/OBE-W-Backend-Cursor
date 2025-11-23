@@ -53,9 +53,31 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const { user, updateUserSelections } = useAuth();
-  const [selectedCollege, setSelectedCollege] = useState<string | null>(null);
-  const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
-  const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
+  
+  // Initialize state from localStorage or fallback to null
+  const [selectedCollege, setSelectedCollegeState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('obe-selected-college');
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
+  
+  const [selectedProgram, setSelectedProgramState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('obe-selected-program');
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
+  
+  const [selectedBatch, setSelectedBatchState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('obe-selected-batch');
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
   
   const [colleges, setColleges] = useState<College[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -65,31 +87,131 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const [loadingBatches, setLoadingBatches] = useState(false);
   const isInitialMount = useRef(true);
 
-  // Sync with user's batchId when it changes
+  // Wrapper functions to update state and localStorage
+  const setSelectedCollege = (collegeId: string | null) => {
+    setSelectedCollegeState(collegeId);
+    if (typeof window !== 'undefined') {
+      if (collegeId) {
+        localStorage.setItem('obe-selected-college', JSON.stringify(collegeId));
+      } else {
+        localStorage.removeItem('obe-selected-college');
+      }
+    }
+  };
+
+  const setSelectedProgram = (programId: string | null) => {
+    setSelectedProgramState(programId);
+    if (typeof window !== 'undefined') {
+      if (programId) {
+        localStorage.setItem('obe-selected-program', JSON.stringify(programId));
+      } else {
+        localStorage.removeItem('obe-selected-program');
+      }
+    }
+  };
+
+  const setSelectedBatch = (batchId: string | null) => {
+    setSelectedBatchState(batchId);
+    if (typeof window !== 'undefined') {
+      if (batchId) {
+        localStorage.setItem('obe-selected-batch', JSON.stringify(batchId));
+      } else {
+        localStorage.removeItem('obe-selected-batch');
+      }
+    }
+    // Also update user's batchId if it's different
+    if (user && batchId !== user.batchId) {
+      updateUserSelections({ batchId: batchId || undefined });
+    }
+  };
+
+  // Sync with user's batchId when it changes, but only if no localStorage value exists
   useEffect(() => {
-    if (user?.batchId && user.batchId !== selectedBatch) {
+    const savedBatch = typeof window !== 'undefined' ? localStorage.getItem('obe-selected-batch') : null;
+    if (user?.batchId && user.batchId !== selectedBatch && !savedBatch) {
       setSelectedBatch(user.batchId);
     }
   }, [user?.batchId, selectedBatch]);
 
-  // Sync with user's programId when it changes
+  // Sync with user's programId when it changes, but only if no localStorage value exists
   useEffect(() => {
-    if (user?.programId && user.programId !== selectedProgram) {
+    const savedProgram = typeof window !== 'undefined' ? localStorage.getItem('obe-selected-program') : null;
+    if (user?.programId && user.programId !== selectedProgram && !savedProgram) {
       setSelectedProgram(user.programId);
     }
   }, [user?.programId, selectedProgram]);
 
-  // Initialize admin user's college on first load only
+  // Initialize admin user's college on first load only if no localStorage value exists
   useEffect(() => {
-    if (isInitialMount.current && user?.role === 'ADMIN' && user.collegeId && !selectedCollege) {
+    const savedCollege = typeof window !== 'undefined' ? localStorage.getItem('obe-selected-college') : null;
+    if (isInitialMount.current && user?.role === 'ADMIN' && user.collegeId && !selectedCollege && !savedCollege) {
       setSelectedCollege(user.collegeId);
       isInitialMount.current = false;
+    }
+  }, [user?.role, user?.collegeId, selectedCollege]);
+
+  // Initialize department head's college on first load or clear mismatched localStorage
+  useEffect(() => {
+    const savedCollege = typeof window !== 'undefined' ? localStorage.getItem('obe-selected-college') : null;
+    
+    if (user?.role === 'DEPARTMENT' && user.collegeId) {
+      // Always ensure department head has their correct college selected
+      if (selectedCollege !== user.collegeId) {
+        console.log('Department head college synchronization:');
+        console.log('User collegeId:', user.collegeId);
+        console.log('Current selectedCollege:', selectedCollege);
+        console.log('Saved college:', savedCollege);
+        
+        // Force set the correct college
+        setSelectedCollege(user.collegeId);
+        
+        // Clear any mismatched localStorage
+        if (savedCollege && savedCollege !== user.collegeId) {
+          console.log('Clearing mismatched localStorage data');
+          localStorage.removeItem('obe-selected-college');
+          localStorage.removeItem('obe-selected-program');
+          localStorage.removeItem('obe-selected-batch');
+        }
+      }
+    }
+  }, [user?.role, user?.collegeId, selectedCollege]);
+
+  // Initialize teacher's college on first load or clear mismatched localStorage
+  useEffect(() => {
+    const savedCollege = typeof window !== 'undefined' ? localStorage.getItem('obe-selected-college') : null;
+    
+    if (user?.role === 'TEACHER' && user.collegeId) {
+      // If there's a saved college that doesn't match the user's assigned college, clear it
+      if (savedCollege && savedCollege !== user.collegeId) {
+        console.log('Teacher college mismatch detected, clearing localStorage');
+        console.log('User collegeId:', user.collegeId);
+        console.log('Saved college:', savedCollege);
+        setSelectedCollege(user.collegeId);
+        localStorage.removeItem('obe-selected-college');
+        localStorage.removeItem('obe-selected-program');
+        localStorage.removeItem('obe-selected-batch');
+      }
+      // Set college if not already set
+      else if (!selectedCollege && !savedCollege) {
+        console.log('Setting teacher college:', user.collegeId);
+        setSelectedCollege(user.collegeId);
+      }
     }
   }, [user?.role, user?.collegeId, selectedCollege]);
 
   // Reset initial mount flag when user changes
   useEffect(() => {
     isInitialMount.current = true;
+    
+    // Force college reset for department heads when user changes
+    if (user?.role === 'DEPARTMENT' && user.collegeId) {
+      console.log('User changed to department head, forcing college reset to:', user.collegeId);
+      setSelectedCollege(user.collegeId);
+      // Clear any existing localStorage that might conflict
+      localStorage.removeItem('obe-selected-college');
+      localStorage.removeItem('obe-selected-program');
+      localStorage.removeItem('obe-selected-batch');
+    }
   }, [user?.id]);
 
   // Fetch colleges on mount
@@ -97,12 +219,12 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     fetchColleges();
   }, []);
 
-  // Fetch programs when college changes or for teachers on mount
+  // Fetch programs when college changes or for teachers/department heads on mount
   useEffect(() => {
     if (selectedCollege) {
       fetchPrograms(selectedCollege);
-    } else if (user?.role === 'TEACHER' && user?.collegeId) {
-      // For teachers, fetch programs from their assigned college
+    } else if ((user?.role === 'TEACHER' || user?.role === 'DEPARTMENT') && user?.collegeId) {
+      // For teachers and department heads, fetch programs from their assigned college
       fetchPrograms(user.collegeId);
     } else {
       setPrograms([]);
@@ -126,6 +248,7 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
       const response = await fetch('/api/colleges');
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched colleges:', data.map(c => ({ id: c.id, name: c.name, code: c.code })));
         setColleges(data);
       }
     } catch (error) {
@@ -140,8 +263,8 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setPrograms(data);
-        // Only reset selections if this is not the teacher's auto-fetch
-        if (!(user?.role === 'TEACHER' && collegeId === user.collegeId && !selectedCollege)) {
+        // Only reset selections if this is not the teacher's/department head's auto-fetch
+        if (!((user?.role === 'TEACHER' || user?.role === 'DEPARTMENT') && collegeId === user.collegeId && !selectedCollege)) {
           setSelectedProgram(null);
           setSelectedBatch(null);
         }

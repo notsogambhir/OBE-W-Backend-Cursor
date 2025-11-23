@@ -39,6 +39,41 @@ export async function GET(
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
+    // Check if course is completed - only calculate PO attainment for completed courses
+    if (course.status !== 'COMPLETED') {
+      return NextResponse.json({
+        message: 'PO attainment calculation only available for completed courses',
+        courseId: course.id,
+        courseCode: course.code,
+        courseName: course.name,
+        courseStatus: course.status,
+        poAttainments: [],
+        complianceAnalysis: {
+          totalPOs: 0,
+          attainedPOs: 0,
+          level3POs: 0,
+          level2POs: 0,
+          level1POs: 0,
+          notAttainedPOs: 0,
+          overallAttainment: 0,
+          nbaComplianceScore: 0,
+          isCompliant: false,
+          recommendations: ['Course must be marked as completed before PO attainment can be calculated']
+        },
+        nbaGuidelines: {
+          targetAttainment: 60,
+          levelDefinitions: {
+            'Level 3': '80-100% - Excellent attainment',
+            'Level 2': '65-79% - Good attainment', 
+            'Level 1': '60-64% - Minimum attainment',
+            'Not Attained': '< 60% - Below minimum'
+          },
+          calculationMethod: 'NBA-compliant calculation using mapping levels and CO coverage',
+          requirement: 'Only completed courses are eligible for PO attainment calculation'
+        }
+      });
+    }
+
     // Get POs for the program
     const pos = await db.pO.findMany({
       where: { 

@@ -3,6 +3,18 @@ import { db } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 
+// Helper function to get token from both headers and cookies
+function getTokenFromRequest(request: NextRequest): string | null {
+  // Try Authorization header first (for cross-origin requests)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+  
+  // Fall back to cookie (for same-origin requests)
+  return request.cookies.get('auth-token')?.value || null;
+}
+
 const updateStudentSchema = z.object({
   name: z.string().min(1, 'Student name is required').optional(),
   programId: z.string().min(1, 'Program is required').optional(),
@@ -16,8 +28,8 @@ export async function GET(
   { params }: { params: Promise<{ studentId: string }> }
 ) {
   try {
-    // Get token from cookie
-    const token = request.cookies.get('auth-token')?.value;
+    // Get token using enhanced function (supports both header and cookie)
+    const token = getTokenFromRequest(request);
     
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 });
@@ -92,8 +104,8 @@ export async function PUT(
   { params }: { params: Promise<{ studentId: string }> }
 ) {
   try {
-    // Get token from cookie
-    const token = request.cookies.get('auth-token')?.value;
+    // Get token using enhanced function (supports both header and cookie)
+    const token = getTokenFromRequest(request);
     
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 });
@@ -207,8 +219,8 @@ export async function DELETE(
   { params }: { params: Promise<{ studentId: string }> }
 ) {
   try {
-    // Get token from cookie
-    const token = request.cookies.get('auth-token')?.value;
+    // Get token using enhanced function (supports both header and cookie)
+    const token = getTokenFromRequest(request);
     
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 });

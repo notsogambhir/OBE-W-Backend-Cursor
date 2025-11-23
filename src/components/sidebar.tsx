@@ -60,6 +60,20 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
     setSelectedBatch,
   } = useSidebarContext();
 
+  // Debug logging for department heads
+  useEffect(() => {
+    if (user.role === 'DEPARTMENT') {
+      console.log('Sidebar Debug - Department Head Info:', {
+        userName: user.name,
+        userRole: user.role,
+        userCollegeId: user.collegeId,
+        selectedCollege: selectedCollege,
+        collegesCount: colleges.length,
+        collegeNames: colleges.map(c => ({ id: c.id, name: c.name }))
+      });
+    }
+  }, [user, selectedCollege, colleges]);
+
   // Check if user is high-level (can see contextual filters)
   const isHighLevelUser = hasPermission('DEPARTMENT');
   
@@ -69,6 +83,7 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
   // Initialize context for department users
   useEffect(() => {
     if (user.role === 'DEPARTMENT' && user.collegeId && !selectedCollege) {
+      console.log('Sidebar: Initializing department head college:', user.collegeId);
       setSelectedCollege(user.collegeId);
     }
   }, [user.role, user.collegeId, selectedCollege, setSelectedCollege]);
@@ -201,6 +216,12 @@ export function Sidebar({ user, activeView, onViewChange, onLogout, onBackToSele
                     ))}
                   </SelectContent>
                 </Select>
+                {/* Debug info */}
+                {user.role === 'DEPARTMENT' && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Debug: User collegeId: {user.collegeId}, Selected: {selectedCollege}
+                  </div>
+                )}
               </div>
             )}
 

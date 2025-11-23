@@ -268,7 +268,16 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('business@obeportal.com', 'department123', 'CBS')}
+                  onClick={() => handleQuickLogin('cse@obeportal.com', 'password123', 'CUIET')}
+                  className="text-xs"
+                >
+                  Dept Head (CSE)
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickLogin('business@obeportal.com', 'password123', 'CBS')}
                   className="text-xs"
                 >
                   Dept Head (CBS)

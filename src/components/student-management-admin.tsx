@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { StudentBulkUpload } from '@/components/student-bulk-upload';
 import { useAuth } from '@/hooks/use-auth';
 import { useSidebarContext } from '@/contexts/sidebar-context';
+import { getAuthHeaders } from '@/lib/api-config';
 
 interface User {
   id: string;
@@ -263,9 +264,7 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify(formData),
       });
@@ -302,9 +301,7 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
     try {
       const response = await fetch(`/api/students/${studentId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ isActive: !currentStatus }),
         disabled: viewOnly,
       });
@@ -336,6 +333,7 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
     try {
       const response = await fetch(`/api/students/${studentId}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
         disabled: viewOnly,
       });
       
@@ -417,14 +415,27 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
   // Handle section assignment
   const handleSectionChange = async (studentId: string, sectionId: string) => {
     try {
+      console.log('=== Section Change Attempt ===');
+      console.log('Student ID:', studentId);
+      console.log('New Section ID:', sectionId);
+      console.log('User role:', user?.role);
+      console.log('User collegeId:', user?.collegeId);
+      
+      const requestBody = { sectionId: sectionId === 'none' ? null : sectionId };
+      console.log('Request body:', requestBody);
+      
+      const authHeaders = getAuthHeaders();
+      console.log('Auth headers:', authHeaders);
+      
       const response = await fetch(`/api/students/${studentId}/section`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sectionId: sectionId === 'none' ? null : sectionId }),
+        headers: authHeaders,
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       if (response.ok) {
         // Refresh students data
         fetchStudents();
@@ -433,9 +444,11 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
           description: 'Student section assignment updated successfully.',
         });
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error response data:', errorData);
         toast({
           title: 'Error',
-          description: 'Failed to update student section.',
+          description: errorData.error || 'Failed to update student section.',
           variant: 'destructive',
         });
       }
