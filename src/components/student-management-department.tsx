@@ -411,11 +411,9 @@ export function StudentManagementDepartment({ user }: { user: User }) {
 
       {showBulkUpload && (
         <StudentBulkUpload
-          user={{
-            ...user,
-            programId: programIdToUse,
-            batchId: batchIdToUse,
-          }}
+          selectedCollege={user?.collegeId || ''}
+          selectedProgram={programIdToUse || ''}
+          selectedBatch={batchIdToUse || ''}
           onStudentsUploaded={handleBulkUploadComplete}
           onClose={() => setShowBulkUpload(false)}
         />

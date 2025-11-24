@@ -737,7 +737,7 @@ export function UserManagement() {
             </div>
             <div>
               <Label htmlFor="edit-college">College</Label>
-              <Select value={formData.collegeId} onValueChange={(value) => setFormData({ ...formData, collegeId: value === 'none' ? '' : value, departmentId: '', programId: '' })}>
+              <Select value={formData.collegeId} onValueChange={(value) => setFormData({ ...formData, collegeId: value === 'none' ? '' : value, programId: '' })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select college" />
                 </SelectTrigger>

@@ -55,11 +55,20 @@ export function StudentBulkUpload({ selectedCollege, selectedProgram, selectedBa
 
   const processExcelFile = async (file: File) => {
     try {
+      console.log('Processing file:', file.name, file.type, file.size);
+      
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      console.log('Excel parsed successfully:', {
+        sheets: workbook.SheetNames,
+        sheetName: sheetName,
+        rowCount: jsonData.length,
+        sampleRow: jsonData[0]
+      });
 
       if (!jsonData || jsonData.length === 0) {
         toast.error('Excel file is empty or invalid');
@@ -128,13 +137,30 @@ export function StudentBulkUpload({ selectedCollege, selectedProgram, selectedBa
       }
     } catch (error) {
       console.error('Error processing Excel file:', error);
-      toast.error('Failed to process Excel file');
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Unsupported file')) {
+          toast.error('Unsupported file format. Please ensure the file is a valid Excel (.xlsx, .xls) or CSV file.');
+        } else if (error.message.includes('Invalid file')) {
+          toast.error('Invalid file format. Please check the Excel file and try again.');
+        } else {
+          toast.error(`Failed to process Excel file: ${error.message}`);
+        }
+      } else {
+        toast.error('Failed to process Excel file. Please check the file format and try again.');
+      }
     } finally {
       setUploading(false);
     }
   };
 
   const handleFile = async (file: File) => {
+    // Check file extension as fallback for browsers that don't correctly detect MIME types
+    const fileName = file.name.toLowerCase();
+    const validExtensions = ['.xlsx', '.xls', '.csv'];
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    
     // Check file type
     const validTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
@@ -142,10 +168,18 @@ export function StudentBulkUpload({ selectedCollege, selectedProgram, selectedBa
       'text/csv', // .csv
     ];
 
-    if (!validTypes.includes(file.type)) {
+    if (!validTypes.includes(file.type) && !hasValidExtension) {
       toast.error('Please upload a valid Excel file (.xlsx, .xls) or CSV file');
       return;
     }
+
+    console.log('File details:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified,
+      hasValidExtension: hasValidExtension
+    });
 
     await processExcelFile(file);
   };

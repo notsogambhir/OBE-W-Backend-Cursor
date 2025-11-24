@@ -240,8 +240,7 @@ export function TeacherAssignment({ courseId, user }: TeacherAssignmentProps) {
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground mb-4">
-            <strong>Program:</strong> {course.batch.program.name} ({course.batch.program.code})<br />
-            <strong>Batch:</strong> {course.batch.name}
+            <strong>Program:</strong> {course.batch?.program?.name || 'N/A'} ({course.batch?.program?.code || 'N/A'})<br />
           </div>
         </CardContent>
       </Card>

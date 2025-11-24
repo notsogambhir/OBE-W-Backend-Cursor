@@ -332,15 +332,20 @@ export function CourseManagementAdmin({ user }: { user: User }) {
       console.log('Course ID:', courseId);
       console.log('New Status:', newStatus);
       
-      const response = await fetch(`/api/courses/${courseId}/status`, {
+      // Create a timeout promise to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 30000); // 30 second timeout
+      });
+      
+      const fetchPromise = fetch(`/api/courses/${courseId}/status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-HTTP-Method-Override': 'PATCH',
         },
         body: JSON.stringify({ status: newStatus }),
       });
 
+      const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
       console.log('Response status:', response.status);
 
       if (response.ok) {
@@ -370,7 +375,11 @@ export function CourseManagementAdmin({ user }: { user: User }) {
       }
     } catch (error) {
       console.error('Error updating course status:', error);
-      toast.error('Error updating course status');
+      if (error instanceof Error && error.message === 'Request timeout') {
+        toast.error('Request timed out. The course status update may have completed. Please refresh the page.');
+      } else {
+        toast.error('Error updating course status');
+      }
     } finally {
       setUpdatingCourseId(undefined);
     }

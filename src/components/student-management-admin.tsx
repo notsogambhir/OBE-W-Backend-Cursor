@@ -630,10 +630,11 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       {/* Bulk Upload */}
       {showBulkUpload && (
         <StudentBulkUpload 
-          onComplete={handleBulkUploadComplete}
-          collegeId={selectedCollege || ''}
-          programId={selectedProgram || ''}
-          batchId={selectedBatch || ''}
+          onStudentsUploaded={handleBulkUploadComplete}
+          selectedCollege={selectedCollege || ''}
+          selectedProgram={selectedProgram || ''}
+          selectedBatch={selectedBatch || ''}
+          onClose={() => setShowBulkUpload(false)}
         />
       )}
 

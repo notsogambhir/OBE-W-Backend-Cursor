@@ -27,6 +27,7 @@ interface Student {
   id: string;
   name: string;
   studentId: string;
+  email?: string;
   sectionId?: string;
   batchId: string;
   programId: string;

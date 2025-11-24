@@ -105,47 +105,46 @@ export async function POST(
       console.log(`Found ${eligibleStudents.length} eligible students for automatic enrollment`);
 
       if (eligibleStudents.length > 0) {
-        // Create enrollments for all eligible students
-        const enrollments = await Promise.all(
-          eligibleStudents.map(async (student) => {
-            try {
-              // Check if student is already enrolled
-              const existingEnrollment = await db.enrollment.findUnique({
-                where: {
-                  courseId_studentId: {
-                    courseId: courseId,
-                    studentId: student.id
-                  }
+        // Create enrollments for all eligible students with better error handling
+        let successfulEnrollments = 0;
+
+        // Process students sequentially to avoid database overload and hanging
+        for (const student of eligibleStudents) {
+          try {
+            // Check if student is already enrolled
+            const existingEnrollment = await db.enrollment.findUnique({
+              where: {
+                courseId_studentId: {
+                  courseId: courseId,
+                  studentId: student.id
+                }
+              }
+            });
+
+            if (!existingEnrollment) {
+              await db.enrollment.create({
+                data: {
+                  courseId: courseId,
+                  studentId: student.id,
+                  isActive: true
                 }
               });
-
-              if (!existingEnrollment) {
-                const enrollment = await db.enrollment.create({
-                  data: {
-                    courseId: courseId,
-                    studentId: student.id,
-                    isActive: true
-                  }
-                });
-                console.log(`Enrolled student: ${student.name} (${student.studentId})`);
-                return enrollment;
-              } else {
-                console.log(`Student ${student.name} already enrolled, skipping`);
-                return existingEnrollment;
-              }
-            } catch (error) {
-              console.error(`Error enrolling student ${student.name}:`, error);
-              return null;
+              console.log(`Enrolled student: ${student.name} (${student.studentId})`);
+              successfulEnrollments++;
+            } else {
+              console.log(`Student ${student.name} already enrolled, skipping`);
             }
-          })
-        );
+          } catch (error) {
+            console.error(`Error enrolling student ${student.name}:`, error);
+            // Continue with next student even if one fails
+          }
+        }
 
-        const successfulEnrollments = enrollments.filter(e => e !== null);
-        console.log(`Successfully enrolled ${successfulEnrollments.length} out of ${eligibleStudents.length} eligible students`);
+        console.log(`Successfully enrolled ${successfulEnrollments} out of ${eligibleStudents.length} eligible students`);
 
         enrollmentData = {
           totalEligible: eligibleStudents.length,
-          successfullyEnrolled: successfulEnrollments.length,
+          successfullyEnrolled: successfulEnrollments,
           students: eligibleStudents.map(s => ({
             id: s.id,
             name: s.name,
