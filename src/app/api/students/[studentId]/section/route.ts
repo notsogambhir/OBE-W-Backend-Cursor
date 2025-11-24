@@ -23,18 +23,19 @@ async function handleSectionUpdate(
   request: NextRequest,
   params: { studentId: string }
 ) {
+  const { studentId } = params;
   console.log('=== STUDENT SECTION UPDATE REQUEST START ===');
   console.log('Student ID:', studentId);
-  
+
   try {
     // Try to get token from Authorization header first, then fallback to cookie
     let token = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!token) {
       token = request.cookies.get('auth-token')?.value;
     }
-    
+
     console.log('Token present:', !!token);
-    
+
     if (!token) {
       console.log('No token found - returning 401');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,7 +43,7 @@ async function handleSectionUpdate(
 
     const user = verifyToken(token);
     console.log('User from token:', { id: user?.id, role: user?.role, collegeId: user?.collegeId });
-    
+
     if (!user) {
       console.log('Invalid token - returning 401');
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -56,51 +57,50 @@ async function handleSectionUpdate(
       return NextResponse.json({ error: 'Section ID is required' }, { status: 400 });
     }
 
+    // Fetch student details to verify existence and permissions
+    const student = await db.user.findUnique({
+      where: { id: studentId },
+      include: {
+        batch: {
+          include: {
+            program: {
+              include: {
+                college: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!student) {
+      return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+    }
+
+    if (student.role !== 'STUDENT') {
+      return NextResponse.json({ error: 'Only students can be assigned to sections' }, { status: 400 });
+    }
+
     // Check permissions - Admin, University, and Department can assign students to sections
     console.log('=== PERMISSION CHECK ===');
     console.log('User role:', user?.role);
     console.log('User college ID:', user?.collegeId);
-    
+
     // Allow ADMIN and UNIVERSITY users directly
     if (['ADMIN', 'UNIVERSITY'].includes(user?.role)) {
       console.log('✅ Admin/University access granted');
     } else if (user?.role === 'DEPARTMENT') {
       console.log('🔍 Department access - checking college permissions');
-      
-      // For department users, we need to verify college access
-      // Get the student first to check their batch/program
-      const student = await db.user.findUnique({
-        where: { id: studentId },
-        include: {
-          batch: {
-            include: {
-              program: {
-                include: {
-                  college: true
-                }
-              }
-            }
-          }
-        }
-      });
-
-      if (!student) {
-        return NextResponse.json({ error: 'Student not found' }, { status: 404 });
-      }
-
-      if (student.role !== 'STUDENT') {
-        return NextResponse.json({ error: 'Only students can be assigned to sections' }, { status: 400 });
-      }
 
       console.log('Student batch program college ID:', student?.batch?.program?.collegeId);
       console.log('User college ID:', user?.collegeId);
-      
+
       // Check if department user has access to this student's college
       if (student?.batch?.program?.collegeId !== user?.collegeId) {
         console.log('❌ Department access denied - college mismatch');
         return NextResponse.json({ error: 'Access denied - insufficient college permissions' }, { status: 403 });
       }
-      
+
       console.log('✅ Department access granted - college matches');
     } else {
       console.log('❌ Insufficient permissions');
@@ -121,8 +121,8 @@ async function handleSectionUpdate(
       }
 
       if (section.batchId !== student.batchId) {
-        return NextResponse.json({ 
-          error: 'Section must be in the same batch as the student' 
+        return NextResponse.json({
+          error: 'Section must be in the same batch as the student'
         }, { status: 400 });
       }
     }
@@ -149,7 +149,7 @@ async function handleSectionUpdate(
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack available');
     console.error('Error type:', typeof error);
     console.error('Error message:', error instanceof Error ? error.message : 'No message available');
-    
+
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

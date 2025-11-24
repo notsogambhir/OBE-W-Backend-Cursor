@@ -67,13 +67,13 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form fields
     const validationErrors: string[] = [];
     if (!formData.email) validationErrors.push("Email is required");
     if (!formData.password) validationErrors.push("Password is required");
     if (!formData.collegeId) validationErrors.push("College selection is required");
-    
+
     if (validationErrors.length > 0) {
       toast({
         title: "Validation Error",
@@ -97,29 +97,29 @@ export function LoginForm() {
     setLoading(true);
     try {
       await login(formData.email, formData.password, formData.collegeId);
-      
+
       // If batch was selected, store it for after login
       if (formData.batchId) {
         localStorage.setItem('obe-selected-batch', formData.batchId);
       }
-      
+
       toast({
         title: "Login Successful",
         description: "Welcome back! Redirecting to your dashboard...",
       });
-      
+
       // Don't reload - let the auth state change naturally redirect the user
       // The AppWrapper will automatically show the dashboard when user state changes
-      
+
     } catch (error) {
       console.error('Login error:', error);
-      
+
       let errorMessage = "An unexpected error occurred";
       let errorTitle = "Login Failed";
-      
+
       if (error instanceof Error) {
         const message = error.message.toLowerCase();
-        
+
         if (message.includes('invalid credentials') || message.includes('college access denied')) {
           errorTitle = "Authentication Failed";
           errorMessage = "Invalid email, password, or college access. Please check your credentials and try again.";
@@ -136,7 +136,7 @@ export function LoginForm() {
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
@@ -149,11 +149,11 @@ export function LoginForm() {
 
   const handleQuickLogin = async (email: string, password: string, collegeCode?: string) => {
     setLoading(true);
-    
+
     try {
       // Find college ID if college code is provided
       let collegeId = formData.collegeId;
-      
+
       if (collegeCode) {
         // Wait for colleges to load if needed
         if (colleges.length === 0) {
@@ -162,7 +162,7 @@ export function LoginForm() {
           // Wait a bit more for state to update
           await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
+
         const college = colleges.find(c => c.code === collegeCode);
         if (college) {
           collegeId = college.id;
@@ -183,21 +183,21 @@ export function LoginForm() {
 
       console.log('Attempting quick login:', { email, collegeId, collegeCode });
       await login(email, password, collegeId);
-      
+
       toast({
         title: "Login Successful",
         description: `Welcome back! Redirecting to your dashboard...`,
       });
-      
+
     } catch (error) {
       console.error('Quick login error:', error);
-      
+
       let errorMessage = "An unexpected error occurred during quick login";
       let errorTitle = "Quick Login Failed";
-      
+
       if (error instanceof Error) {
         const message = error.message.toLowerCase();
-        
+
         if (message.includes('college with code') || message.includes('not found')) {
           errorTitle = "College Not Found";
           errorMessage = "The specified college could not be found. Please try selecting a college manually.";
@@ -214,7 +214,7 @@ export function LoginForm() {
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
@@ -233,7 +233,7 @@ export function LoginForm() {
             OBE Portal
           </h2>
         </div>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Faculty & Management Portal</CardTitle>
@@ -250,7 +250,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('admin@obeportal.com', 'admin123', 'CUIET')}
+                  onClick={() => handleQuickLogin('admin@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   Admin
@@ -259,7 +259,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('university@obeportal.com', 'university123', 'CUIET')}
+                  onClick={() => handleQuickLogin('university@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   University
@@ -268,7 +268,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('cse@obeportal.com', 'department123', 'CUIET')}
+                  onClick={() => handleQuickLogin('cse@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   Dept Head (CSE)
@@ -277,7 +277,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('business@obeportal.com', 'department123', 'CBS')}
+                  onClick={() => handleQuickLogin('business@obeportal.com', 'password123', 'CBS')}
                   className="text-xs"
                 >
                   Dept Head (CBS)
@@ -286,7 +286,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('teacher2@obeportal.com', 'teacher123', 'CBS')}
+                  onClick={() => handleQuickLogin('teacher2@obeportal.com', 'password123', 'CBS')}
                   className="text-xs"
                 >
                   Teacher (BBA)
@@ -295,7 +295,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('teacher1@obeportal.com', 'teacher123', 'CUIET')}
+                  onClick={() => handleQuickLogin('teacher1@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   Teacher (ME)
@@ -304,7 +304,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('pc.bba@obeportal.com', 'coordinator123', 'CBS')}
+                  onClick={() => handleQuickLogin('pc.bba@obeportal.com', 'password123', 'CBS')}
                   className="text-xs"
                 >
                   Program Coord (BBA)
@@ -313,7 +313,7 @@ export function LoginForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuickLogin('pc.beme@obeportal.com', 'coordinator123', 'CUIET')}
+                  onClick={() => handleQuickLogin('pc.beme@obeportal.com', 'password123', 'CUIET')}
                   className="text-xs"
                 >
                   Program Coord (ME)
@@ -411,9 +411,9 @@ export function LoginForm() {
                 )}
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={loading}
               >
                 {loading ? 'Signing in...' : 'Sign In'}
