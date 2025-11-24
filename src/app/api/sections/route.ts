@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { verifyToken, extractTokenFromRequest } from '@/lib/auth';
+import { getUserFromRequest } from '@/lib/server-auth';
 
 // GET /api/sections - Get sections for a batch
 export async function GET(request: NextRequest) {
   try {
-    const token = extractTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
+    const user = await getUserFromRequest(request);
+    
     if (!user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -65,6 +61,21 @@ export async function GET(request: NextRequest) {
         isActive: true
       },
       include: {
+        batch: {
+          include: {
+            program: {
+              include: {
+                college: {
+                  select: {
+                    id: true,
+                    name: true,
+                    code: true
+                  }
+                }
+              }
+            }
+          }
+        },
         _count: {
           select: {
             students: true
@@ -89,14 +100,10 @@ export async function GET(request: NextRequest) {
 // POST /api/sections - Create a new section
 export async function POST(request: NextRequest) {
   try {
-    const token = extractTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
+    const user = await getUserFromRequest(request);
+    
     if (!user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { name, batchId } = await request.json();
@@ -110,21 +117,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // For Department role, check if they have access to this batch
-    if (user.role === 'DEPARTMENT') {
-      const batch = await db.batch.findUnique({
-        where: { id: batchId },
-        include: {
-          program: {
-            include: {
-              college: true
-            }
+    // Verify batch exists and check permissions
+    const batch = await db.batch.findUnique({
+      where: { id: batchId },
+      include: {
+        program: {
+          include: {
+            college: true
           }
         }
-      });
+      }
+    });
 
-      if (!batch || batch.program.collegeId !== user.collegeId) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    if (!batch) {
+      return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
+    }
+
+    // For Department role, check if they have access to this batch's college
+    if (user.role === 'DEPARTMENT') {
+      if (batch.program.collegeId !== user.collegeId) {
+        return NextResponse.json({ error: 'Access denied - insufficient college permissions' }, { status: 403 });
       }
     }
 
@@ -149,7 +161,22 @@ export async function POST(request: NextRequest) {
       include: {
         batch: {
           include: {
-            program: true
+            program: {
+              include: {
+                college: {
+                  select: {
+                    id: true,
+                    name: true,
+                    code: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            students: true
           }
         }
       }

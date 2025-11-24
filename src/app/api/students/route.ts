@@ -7,7 +7,7 @@ import { studentSchema } from '@/lib/validations/student';
 // GET /api/students - Get all students for the current program/batch
 export async function GET(request: NextRequest) {
   try {
-    // Get user using the enhanced auth function (supports both header and cookie)
+    // Get user using by enhanced auth function (supports both header and cookie)
     const user = await getUserFromRequest(request);
     
     if (!user) {
@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Handle other roles (ADMIN, SUPER_ADMIN, etc.)
-    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+    // Handle other roles (ADMIN, UNIVERSITY, etc.)
+    if (user.role === 'ADMIN' || user.role === 'UNIVERSITY') {
       if (collegeId && !programId) {
         // Find all programs under this college
         const programs = await db.program.findMany({
@@ -79,6 +79,13 @@ export async function GET(request: NextRequest) {
     const students = await db.user.findMany({
       where: whereClause,
       include: {
+        college: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
         program: {
           select: {
             id: true,
@@ -131,7 +138,7 @@ export async function GET(request: NextRequest) {
 // POST /api/students - Create a new student
 export async function POST(request: NextRequest) {
   try {
-    // Get user using the enhanced auth function (supports both header and cookie)
+    // Get user using enhanced auth function (supports both header and cookie)
     const user = await getUserFromRequest(request);
     
     if (!user) {
@@ -214,31 +221,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify that the program exists
+    // Verify that college exists
+    const college = await db.college.findUnique({
+      where: { id: validatedData.collegeId },
+    });
+
+    if (!college) {
+      return NextResponse.json(
+        { error: 'Invalid college ID' },
+        { status: 400 }
+      );
+    }
+
+    // Verify that program exists and belongs to the college
     const program = await db.program.findUnique({
       where: { id: validatedData.programId },
     });
 
-    if (!program) {
+    if (!program || program.collegeId !== validatedData.collegeId) {
       return NextResponse.json(
-        { error: 'Invalid program ID' },
+        { error: 'Invalid program ID or program does not belong to the specified college' },
         { status: 400 }
       );
     }
 
-    // Verify that the batch exists
+    // Verify that batch exists and belongs to the program
     const batch = await db.batch.findUnique({
       where: { id: validatedData.batchId },
     });
 
-    if (!batch) {
+    if (!batch || batch.programId !== validatedData.programId) {
       return NextResponse.json(
-        { error: 'Invalid batch ID' },
+        { error: 'Invalid batch ID or batch does not belong to the specified program' },
         { status: 400 }
       );
     }
 
-    // Create the student
+    // Create student
     const studentPassword = validatedData.password || 'defaultPassword123';
     
     const student = await db.user.create({
@@ -253,9 +272,51 @@ export async function POST(request: NextRequest) {
         batchId: validatedData.batchId,
         isActive: true,
       },
+      include: {
+        college: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        program: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        batch: {
+          select: {
+            id: true,
+            name: true,
+            startYear: true,
+            endYear: true,
+            program: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+          },
+        },
+        section: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            enrollments: true,
+          },
+        },
+      },
     });
 
-     // Auto-assign student to a section if the batch has sections
+    // Auto-assign student to a section if batch has sections
     if (batch && validatedData.batchId) {
       const sections = await db.section.findMany({
         where: {
@@ -266,7 +327,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (sections.length > 0) {
-        // Assign to the first available section
+        // Assign to first available section
         const firstSection = sections[0];
         await db.user.update({
           where: { id: student.id },
@@ -274,6 +335,10 @@ export async function POST(request: NextRequest) {
             sectionId: firstSection.id
           }
         });
+        
+        // Update the student object with section info
+        student.sectionId = firstSection.id;
+        student.section = { id: firstSection.id, name: firstSection.name };
       }
     }
 

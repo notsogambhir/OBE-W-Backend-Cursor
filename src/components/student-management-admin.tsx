@@ -36,6 +36,7 @@ interface Student {
   role: string;
   isActive: boolean;
   email?: string;
+  collegeId?: string;
   college?: {
     id: string;
     name: string;
@@ -46,6 +47,13 @@ interface Student {
     name: string;
     code: string;
   };
+  programId?: string;
+  program?: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  batchId?: string;
   batch?: {
     id: string;
     name: string;
@@ -55,9 +63,9 @@ interface Student {
       id: string;
       name: string;
       code: string;
-      collegeId: string;
     };
   };
+  sectionId?: string;
   section?: {
     id: string;
     name: string;
@@ -88,6 +96,28 @@ interface Batch {
   programId: string;
 }
 
+interface Section {
+  id: string;
+  name: string;
+  batchId: string;
+  batch: {
+    id: string;
+    name: string;
+    program: {
+      id: string;
+      name: string;
+      college: {
+        id: string;
+        name: string;
+        code: string;
+      };
+    };
+  };
+  _count: {
+    students: number;
+  };
+}
+
 interface StudentFormData {
   studentId: string;
   name: string;
@@ -103,7 +133,7 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
   const [colleges, setColleges] = useState<College[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -274,7 +304,12 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
         method,
         headers: getAuthHeaders(),
         credentials: 'include',
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          collegeId: selectedCollege,
+          programId: selectedProgram,
+          batchId: selectedBatch,
+        }),
       });
       
       if (response.ok) {
@@ -366,9 +401,9 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       name: student.name,
       email: student.email || '',
       password: '',
-      collegeId: selectedCollege || '',
-      programId: selectedProgram || '',
-      batchId: selectedBatch || '',
+      collegeId: student.collegeId || selectedCollege || '',
+      programId: student.programId || selectedProgram || '',
+      batchId: student.batchId || selectedBatch || '',
     });
     setShowCreateForm(true);
   };
@@ -408,18 +443,6 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
     (student.email && student.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Note: College, Program, and Batch selection are handled by sidebar context
-
-  const [formData, setFormData] = useState<StudentFormData>({
-    studentId: '',
-    name: '',
-    email: '',
-    password: '',
-    collegeId: '',
-    programId: '',
-    batchId: '',
-  });
-
   // Handle section assignment
   const handleSectionChange = async (studentId: string, sectionId: string) => {
     try {
@@ -435,8 +458,11 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       const authHeaders = getAuthHeaders();
       console.log('Auth headers:', authHeaders);
       
+      // Try POST first (for preview environments), fallback to PATCH (for local dev)
+      const method = 'POST';
+      
       const response = await fetch(`/api/students/${studentId}/section`, {
-        method: 'PATCH',
+        method,
         headers: authHeaders,
         credentials: 'include', // Include cookies for local development
         body: JSON.stringify(requestBody),
@@ -459,6 +485,16 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       toast.error('Failed to update student section.');
     }
   };
+
+  const [formData, setFormData] = useState<StudentFormData>({
+    studentId: '',
+    name: '',
+    email: '',
+    password: '',
+    collegeId: '',
+    programId: '',
+    batchId: '',
+  });
 
   return (
     <div className="space-y-6">
@@ -499,7 +535,7 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
             }}
             variant="outline"
             className="flex items-center gap-2"
-            disabled={!canUploadStudents}
+            disabled={!canUploadStudents || viewOnly}
           >
             <Plus className="h-4 w-4" />
             {showCreateForm ? 'Cancel' : 'Add Student'}
@@ -525,31 +561,111 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
         </CardContent>
       </Card>
 
-      {/* Student List */}
+      {/* Create/Edit Student Form */}
+      {showCreateForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{editingStudent ? 'Edit Student' : 'Create New Student'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="studentId">Student ID</Label>
+                  <Input
+                    id="studentId"
+                    placeholder="Enter student ID"
+                    value={formData.studentId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, studentId: e.target.value }))}
+                    required
+                    disabled={!!editingStudent}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Enter student name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter email (optional)"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder={editingStudent ? "Leave blank to keep current" : "Enter password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    required={!editingStudent}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button type="submit" disabled={viewOnly}>
+                  {editingStudent ? 'Update Student' : 'Create Student'}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk Upload */}
+      {showBulkUpload && (
+        <StudentBulkUpload 
+          onComplete={handleBulkUploadComplete}
+          collegeId={selectedCollege || ''}
+          programId={selectedProgram || ''}
+          batchId={selectedBatch || ''}
+        />
+      )}
+
+      {/* Students Table */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Student List ({filteredStudents.length} / {students.length})
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Students ({filteredStudents.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <p className="ml-2 text-muted-foreground">Loading students...</p>
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No students found</p>
             </div>
           ) : (
-            <div className="border rounded-lg">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Student Name</TableHead>
                     <TableHead>Student ID</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>College</TableHead>
                     <TableHead>Program</TableHead>
                     <TableHead>Batch</TableHead>
                     <TableHead>Section</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -557,72 +673,99 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
                 <TableBody>
                   {filteredStudents.map((student) => (
                     <TableRow key={student.id}>
+                      <TableCell className="font-medium">{student.studentId}</TableCell>
                       <TableCell>{student.name}</TableCell>
-                      <TableCell>{student.studentId}</TableCell>
-                      <TableCell>{student.email || '-'}</TableCell>
-                      <TableCell>{student.college?.name || '-'}</TableCell>
-                      <TableCell>{student.program?.name || '-'}</TableCell>
-                      <TableCell>{student.batch?.name || '-'}</TableCell>
                       <TableCell>
-                        {viewOnly ? (
-                          <span>{student.section?.name || '-'}</span>
-                        ) : (
-                          <Select
-                            value={student.section?.id || 'none'}
-                            onValueChange={(value) => handleSectionChange(student.id, value)}
-                            disabled={!selectedBatch}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue placeholder="No section" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Section</SelectItem>
-                              {sections.map((section) => (
-                                <SelectItem key={section.id} value={section.id}>
-                                  {section.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={student.isActive ? "default" : "secondary"}>
-                          {student.isActive ? 'Active' : 'Inactive'}
+                        <Badge variant="outline">
+                          {student.college?.code || 'N/A'}
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        <Badge variant="secondary">
+                          {student.program?.code || 'N/A'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{student.batch?.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {student.batch?.startYear}-{student.batch?.endYear}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {!viewOnly && ['ADMIN', 'UNIVERSITY', 'DEPARTMENT'].includes(user.role) ? (
+                          <Select
+                            value={student.sectionId || 'none'}
+                            onValueChange={(value) => handleSectionChange(student.id, value)}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue placeholder="None" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              {sections
+                                .filter(section => section.batchId === student.batchId)
+                                .map((section) => (
+                                  <SelectItem key={section.id} value={section.id}>
+                                    {section.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="outline">
+                            {student.section?.name || 'None'}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{student.email || '-'}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(student)}
+                          <Switch
+                            checked={student.isActive}
+                            onCheckedChange={() => handleToggleStatus(student.id, student.isActive)}
                             disabled={viewOnly}
-                            className="flex items-center gap-1"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleStatus(student.id, student.isActive)}
-                            disabled={viewOnly}
-                            className={`flex items-center gap-1 ${student.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}`}
-                          >
-                            {student.isActive ? <Power className="h-3 w-3" /> : <Power className="h-3 w-3" />}
-                            {student.isActive ? 'Deactivate' : 'Activate'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(student.id, student.name)}
-                            disabled={viewOnly}
-                            className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Delete
-                          </Button>
+                          />
+                          <span className="text-sm">
+                            {student.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {!viewOnly && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(student)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Student</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete student "{student.name}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(student.id, student.name)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -633,84 +776,6 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
           )}
         </CardContent>
       </Card>
-
-      {/* Bulk Upload Dialog */}
-      {showBulkUpload && (
-        <StudentBulkUpload
-          selectedCollege={selectedCollege}
-          selectedProgram={selectedProgram}
-          selectedBatch={selectedBatch}
-          onComplete={handleBulkUploadComplete}
-          onClose={() => setShowBulkUpload(false)}
-        />
-      )}
-
-      {/* Create/Edit Student Dialog */}
-      {showCreateForm && (
-        <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editingStudent ? 'Edit Student' : 'Add New Student'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="studentId">Student ID *</Label>
-                  <Input
-                    id="studentId"
-                    placeholder="Enter student ID"
-                    value={formData.studentId}
-                    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="name">Student Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="Enter student name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter student email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required={editingStudent ? false : true}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter password (for new students only)"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required={editingStudent ? false : true}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Saving...' : (editingStudent ? 'Update' : 'Create')}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }

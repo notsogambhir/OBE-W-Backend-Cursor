@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { verifyToken } from '@/lib/auth';
+import { getUserFromRequest } from '@/lib/server-auth';
 
 // PUT /api/students/[studentId]/section - Assign student to a section
 export async function PUT(
@@ -18,7 +18,15 @@ export async function PATCH(
   return handleSectionUpdate(request, await params);
 }
 
-// Common handler for both PUT and PATCH
+// POST /api/students/[studentId]/section - Alternative method for preview environments
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ studentId: string }> }
+) {
+  return handleSectionUpdate(request, await params);
+}
+
+// Common handler for all HTTP methods
 async function handleSectionUpdate(
   request: NextRequest,
   params: { studentId: string }
@@ -26,27 +34,17 @@ async function handleSectionUpdate(
   const { studentId } = params;
   console.log('=== STUDENT SECTION UPDATE REQUEST START ===');
   console.log('Student ID:', studentId);
+  console.log('Method:', request.method);
 
   try {
-    // Try to get token from Authorization header first, then fallback to cookie
-    let token = request.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
-      token = request.cookies.get('auth-token')?.value;
-    }
-
-    console.log('Token present:', !!token);
-
-    if (!token) {
-      console.log('No token found - returning 401');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
-    console.log('User from token:', { id: user?.id, role: user?.role, collegeId: user?.collegeId });
+    // Get user using enhanced auth function (supports both header and cookie)
+    const user = await getUserFromRequest(request);
+    
+    console.log('User from request:', { id: user?.id, role: user?.role, collegeId: user?.collegeId });
 
     if (!user) {
-      console.log('Invalid token - returning 401');
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      console.log('No user found - returning 401');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { sectionId } = await request.json();
@@ -61,11 +59,24 @@ async function handleSectionUpdate(
     const student = await db.user.findUnique({
       where: { id: studentId },
       include: {
+        college: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
         batch: {
           include: {
             program: {
               include: {
-                college: true
+                college: {
+                  select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                  },
+                }
               }
             }
           }
@@ -85,6 +96,7 @@ async function handleSectionUpdate(
     console.log('=== PERMISSION CHECK ===');
     console.log('User role:', user?.role);
     console.log('User college ID:', user?.collegeId);
+    console.log('Student college ID:', student?.collegeId);
 
     // Allow ADMIN and UNIVERSITY users directly
     if (['ADMIN', 'UNIVERSITY'].includes(user?.role)) {
@@ -92,11 +104,8 @@ async function handleSectionUpdate(
     } else if (user?.role === 'DEPARTMENT') {
       console.log('🔍 Department access - checking college permissions');
 
-      console.log('Student batch program college ID:', student?.batch?.program?.collegeId);
-      console.log('User college ID:', user?.collegeId);
-
       // Check if department user has access to this student's college
-      if (student?.batch?.program?.collegeId !== user?.collegeId) {
+      if (student?.collegeId !== user?.collegeId) {
         console.log('❌ Department access denied - college mismatch');
         return NextResponse.json({ error: 'Access denied - insufficient college permissions' }, { status: 403 });
       }
@@ -107,12 +116,26 @@ async function handleSectionUpdate(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // If sectionId is not null, verify the section exists and is in the same batch
+    // If sectionId is not null, verify section exists and is in same batch
     if (sectionId !== null) {
       const section = await db.section.findUnique({
         where: { id: sectionId },
         include: {
-          batch: true
+          batch: {
+            include: {
+              program: {
+                include: {
+                  college: {
+                    select: {
+                      id: true,
+                      name: true,
+                      code: true,
+                    },
+                  }
+                }
+              }
+            }
+          }
         }
       });
 
@@ -122,20 +145,45 @@ async function handleSectionUpdate(
 
       if (section.batchId !== student.batchId) {
         return NextResponse.json({
-          error: 'Section must be in the same batch as the student'
+          error: 'Section must be in the same batch as student'
         }, { status: 400 });
+      }
+
+      // Additional permission check for department users
+      if (user.role === 'DEPARTMENT') {
+        if (section.batch.program.collegeId !== user.collegeId) {
+          return NextResponse.json({ error: 'Access denied - section belongs to different college' }, { status: 403 });
+        }
       }
     }
 
-    // Update the student's section assignment
+    // Update student's section assignment
     const updatedStudent = await db.user.update({
       where: { id: studentId },
       data: { sectionId },
       include: {
-        section: true,
+        college: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        section: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         batch: {
           include: {
-            program: true
+            program: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            }
           }
         }
       }

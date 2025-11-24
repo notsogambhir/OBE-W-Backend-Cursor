@@ -35,22 +35,14 @@ const authUserToUser = (authUser: AuthUser | null): User | null => {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false); // Start with false instead of true
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
+    // Initialize auth state immediately from localStorage
+    initializeAuth();
   }, []);
 
-  // Save user to localStorage whenever it changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('obe-user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('obe-user');
-    }
-  }, [user]);
-
-  const checkAuth = async () => {
+  const initializeAuth = async () => {
     try {
       // First check if we have user data in localStorage
       const storedUser = localStorage.getItem('obe-user');
@@ -61,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Check if there's a selected batch from login
           const selectedBatch = localStorage.getItem('obe-selected-batch');
           if (selectedBatch && !parsedUser.batchId) {
-            // Update user with the selected batch
+            // Update user with selected batch
             const updatedUser = { ...parsedUser, batchId: selectedBatch };
             setUser(authUserToUser(updatedUser));
             localStorage.setItem('obe-user', JSON.stringify(updatedUser));
@@ -72,8 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           console.log('Using stored user data:', parsedUser);
           
-          // If we have stored user data, set loading to false immediately
-          // and verify with server in the background
+          // Set loading to false immediately
           setLoading(false);
           
           // Verify with server in background (don't block UI)
@@ -94,30 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Add a fallback timeout to prevent infinite loading
-  useEffect(() => {
-    const fallbackTimeout = setTimeout(() => {
-      if (loading) {
-        console.log('Auth check taking too long, setting loading to false');
-        setLoading(false);
-      }
-    }, 1000); // Reduced to 1 second fallback
-
-    return () => clearTimeout(fallbackTimeout);
-  }, [loading]);
-
   const verifyWithServer = async () => {
-    // Add a timeout to the fetch request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // Reduced to 2 second timeout
-
     try {
-      const response = await fetch(createApiUrl(`/api/auth/me`), {
+      const response = await fetch(createApiUrl('/api/auth/me'), {
         headers: getAuthHeaders(),
-        signal: controller.signal,
       });
-      
-      clearTimeout(timeoutId);
       
       if (response.ok) {
         const data = await response.json();
@@ -127,32 +99,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('Server auth check successful, user:', data.user);
       } else {
         // Silently handle auth failures - don't log 401 errors as they're expected when not logged in
-        if (response.status === 401) {
-          console.log('User not authenticated (401)');
-        } else if (response.status === 403) {
-          console.log('User access forbidden (403)');
-        } else {
+        if (response.status !== 401) {
           console.log('Server auth check failed:', response.status, response.statusText);
         }
         setUser(null);
         localStorage.removeItem('obe-user');
       }
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      const error = fetchError as Error;
-      if (error.name === 'AbortError') {
-        console.log('Server auth check request timed out');
-      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        console.log('Network error during auth check - this is expected in some environments');
-      } else {
-        console.log('Server auth check request failed:', error.message);
-      }
+    } catch (error) {
+      console.error('Server auth check request failed:', error);
       // Don't set user to null on network errors if we have stored data
       const storedUser = localStorage.getItem('obe-user');
       if (!storedUser) {
         setUser(null);
-      } else {
-        console.log('Using stored user data due to network issues');
       }
     } finally {
       setLoading(false);
@@ -183,23 +141,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
     
-    // Use configured URL to work in both development and production
-    console.log('Request URL:', createApiUrl('/api/auth/login'));
-    
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
       const response = await fetch(createApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password, collegeId }),
-        signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
       console.log('Response status:', response.status);
       console.log('Response ok:', response.ok);
 
@@ -220,7 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       console.log('Login successful, received data:', data);
       
-      // Save the token for development cross-origin requests
+      // Save token for development cross-origin requests
       if (data.token) {
         saveAuthToken(data.token);
         console.log('Token saved successfully');
@@ -229,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = authUserToUser(data.user);
       setUser(userData);
       
-      // Update localStorage with the user data
+      // Update localStorage with user data
       localStorage.setItem('obe-user', JSON.stringify(data.user));
       console.log('User data saved to localStorage');
       
@@ -238,7 +188,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           console.log('Post-login verification - checking auth status...');
           const verifyResponse = await fetch(createApiUrl('/api/auth/me'), {
-            // Don't send Authorization header here - let cookie work
             headers: {
               'Content-Type': 'application/json',
             },
@@ -266,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           console.log('Post-login verification error:', error);
         }
-      }, 500); // Increased timeout to allow cookie to be set
+      }, 500); // Reduced timeout to allow cookie to be set
       
     } catch (error) {
       console.error('Login failed:', error);
@@ -285,17 +234,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      // Use configured URL to work in both development and production
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
       const response = await fetch(createApiUrl('/api/auth/logout'), { 
         method: 'POST',
         headers: getAuthHeaders(),
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         console.warn('Logout request failed:', response.status, response.statusText);
@@ -326,7 +268,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
-      // localStorage will be automatically updated by the useEffect
+      // localStorage will be automatically updated by useEffect
     }
   };
 
