@@ -5,37 +5,38 @@ import { verifyToken } from '@/lib/auth';
 // PUT /api/students/[studentId]/section - Assign student to a section
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { studentId: string } }
+  { params }: { params: Promise<{ studentId: string }> }
 ) {
-  return handleSectionUpdate(request, params);
+  return handleSectionUpdate(request, await params);
 }
 
 // PATCH /api/students/[studentId]/section - Update student section assignment
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { studentId: string } }
+  { params }: { params: Promise<{ studentId: string }> }
 ) {
-  return handleSectionUpdate(request, params);
+  return handleSectionUpdate(request, await params);
 }
 
 // Common handler for both PUT and PATCH
 async function handleSectionUpdate(
   request: NextRequest,
-  { params }: { params: Promise<{ studentId: string }> }
+  params: { studentId: string }
 ) {
-  try {
-    console.log('Raw params:', params);
-    const resolvedParams = await params;
-    console.log('Resolved params:', resolvedParams);
-    const studentId = resolvedParams.studentId;
-
-    // Try to get token from Authorization header first, then fallback to cookie
-  let token = request.headers.get('authorization')?.replace('Bearer ', '');
-  if (!token) {
-    token = request.cookies.get('auth-token')?.value;
-  }
+  console.log('=== STUDENT SECTION UPDATE REQUEST START ===');
+  console.log('Student ID:', studentId);
   
+  try {
+    // Try to get token from Authorization header first, then fallback to cookie
+    let token = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!token) {
+      token = request.cookies.get('auth-token')?.value;
+    }
+    
+    console.log('Token present:', !!token);
+    
+    if (!token) {
+      console.log('No token found - returning 401');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -56,53 +57,54 @@ async function handleSectionUpdate(
     }
 
     // Check permissions - Admin, University, and Department can assign students to sections
-    console.log('Checking permissions for user role:', user.role);
-    if (!['ADMIN', 'UNIVERSITY', 'DEPARTMENT'].includes(user.role)) {
-      console.log('Insufficient permissions - returning 403');
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
-    }
-
-    // Get the student to verify they exist and get their batch info
-    console.log('Looking up student with ID:', studentId);
-    const student = await db.user.findUnique({
-      where: { id: studentId },
-      include: {
-        batch: {
-          include: {
-            program: {
-              include: {
-                college: true
+    console.log('=== PERMISSION CHECK ===');
+    console.log('User role:', user?.role);
+    console.log('User college ID:', user?.collegeId);
+    
+    // Allow ADMIN and UNIVERSITY users directly
+    if (['ADMIN', 'UNIVERSITY'].includes(user?.role)) {
+      console.log('✅ Admin/University access granted');
+    } else if (user?.role === 'DEPARTMENT') {
+      console.log('🔍 Department access - checking college permissions');
+      
+      // For department users, we need to verify college access
+      // Get the student first to check their batch/program
+      const student = await db.user.findUnique({
+        where: { id: studentId },
+        include: {
+          batch: {
+            include: {
+              program: {
+                include: {
+                  college: true
+                }
               }
             }
           }
         }
+      });
+
+      if (!student) {
+        return NextResponse.json({ error: 'Student not found' }, { status: 404 });
       }
-    });
 
-    console.log('Found student:', student);
-    console.log('Student role:', student?.role);
-    console.log('Student batch:', student?.batch);
-    console.log('Student batch program:', student?.batch?.program);
-    console.log('Student batch program college:', student?.batch?.program?.college);
+      if (student.role !== 'STUDENT') {
+        return NextResponse.json({ error: 'Only students can be assigned to sections' }, { status: 400 });
+      }
 
-    if (!student) {
-      return NextResponse.json({ error: 'Student not found' }, { status: 404 });
-    }
-
-    if (student.role !== 'STUDENT') {
-      return NextResponse.json({ error: 'Only students can be assigned to sections' }, { status: 400 });
-    }
-
-    // For Department role, check if they have access to this batch
-    if (user?.role === 'DEPARTMENT') {
-      console.log('Department access check:');
-      console.log('Student batch college ID:', student?.batch?.program?.collegeId);
+      console.log('Student batch program college ID:', student?.batch?.program?.collegeId);
       console.log('User college ID:', user?.collegeId);
       
+      // Check if department user has access to this student's college
       if (student?.batch?.program?.collegeId !== user?.collegeId) {
-        console.log('Department access denied - college mismatch');
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        console.log('❌ Department access denied - college mismatch');
+        return NextResponse.json({ error: 'Access denied - insufficient college permissions' }, { status: 403 });
       }
+      
+      console.log('✅ Department access granted - college matches');
+    } else {
+      console.log('❌ Insufficient permissions');
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     // If sectionId is not null, verify the section exists and is in the same batch
@@ -142,9 +144,14 @@ async function handleSectionUpdate(
     console.log('Student updated successfully:', updatedStudent);
     return NextResponse.json(updatedStudent);
   } catch (error) {
-    console.error('Student section assignment error:', error);
+    console.error('=== STUDENT SECTION UPDATE ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack available');
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : 'No message available');
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

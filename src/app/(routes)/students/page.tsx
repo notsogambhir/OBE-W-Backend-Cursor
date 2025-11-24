@@ -23,13 +23,13 @@ export default function StudentsPage() {
   const { selectedCollege, selectedProgram, selectedBatch } = useSidebarContext();
 
   // Check if user has view-only permissions (Program Coordinators and Teachers only)
-  const isViewOnly = ['PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role);
+  const isViewOnly = user ? ['PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role) : false;
   
   // Check if user can access students page (All administrative roles)
-  const canViewStudents = ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role);
+  const canViewStudents = user ? ['ADMIN', 'UNIVERSITY', 'DEPARTMENT', 'PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role) : false;
   
   // Check if user has management permissions (Admin, University, Department)
-  const canManageStudents = ['ADMIN', 'UNIVERSITY', 'DEPARTMENT'].includes(user.role);
+  const canManageStudents = user ? ['ADMIN', 'UNIVERSITY', 'DEPARTMENT'].includes(user.role) : false;
 
   // Check if user can perform CRUD operations (Admin, University, Department only)
   const canPerformCRUD = canManageStudents || !isViewOnly;
@@ -44,17 +44,17 @@ export default function StudentsPage() {
           </p>
         </div>
         <Badge variant={canViewStudents ? "default" : "secondary"}>
-          {user.role.replace('_', ' ')} {isViewOnly && '(View Only)'}
+          {user && user.role ? `${user.role.replace('_', ' ')}${isViewOnly ? ' (View Only)' : ''}` : 'Guest'}
         </Badge>
       </div>
 
       {canViewStudents ? (
         <>
           {/* Section Creation */}
-          <SectionCreation user={user} viewOnly={isViewOnly} />
+          <SectionCreation user={user!} viewOnly={isViewOnly} />
           
           {/* Student Management */}
-          <StudentManagementAdmin user={user} viewOnly={isViewOnly} />
+          <StudentManagementAdmin user={user!} viewOnly={isViewOnly} />
         </>
       ) : (
         <div className="text-center py-8">

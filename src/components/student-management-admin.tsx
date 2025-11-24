@@ -159,7 +159,9 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
   const fetchSections = async () => {
     try {
       if (selectedBatch) {
-        const response = await fetch(`/api/sections?batchId=${selectedBatch}`);
+        const response = await fetch(`/api/sections?batchId=${selectedBatch}`, {
+          credentials: 'include',
+        });
         if (response.ok) {
           const data = await response.json();
           setSections(Array.isArray(data) ? data : []);
@@ -185,7 +187,9 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       if (selectedBatch) params.append('batchId', selectedBatch);
 
       console.log('fetchStudents params:', params.toString());
-      const response = await fetch(`/api/students?${params}`);
+      const response = await fetch(`/api/students?${params}`, {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         console.log('fetchStudents response:', data);
@@ -206,11 +210,15 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
   }, []);
 
   useEffect(() => {
-    fetchPrograms(selectedCollege);
+    if (selectedCollege) {
+      fetchPrograms(selectedCollege);
+    }
   }, [selectedCollege]);
 
   useEffect(() => {
-    fetchBatches(selectedProgram);
+    if (selectedProgram) {
+      fetchBatches(selectedProgram);
+    }
   }, [selectedProgram]);
 
   useEffect(() => {
@@ -302,8 +310,8 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       const response = await fetch(`/api/students/${studentId}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ isActive: !currentStatus }),
-        disabled: viewOnly,
       });
       
       if (response.ok) {
@@ -334,7 +342,7 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       const response = await fetch(`/api/students/${studentId}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
-        disabled: viewOnly,
+        credentials: 'include',
       });
       
       if (response.ok) {
@@ -358,9 +366,9 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       name: student.name,
       email: student.email || '',
       password: '',
-      collegeId: selectedCollege,
-      programId: selectedProgram,
-      batchId: selectedBatch,
+      collegeId: selectedCollege || '',
+      programId: selectedProgram || '',
+      batchId: selectedBatch || '',
     });
     setShowCreateForm(true);
   };
@@ -372,9 +380,9 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       name: '',
       email: '',
       password: '',
-      collegeId: selectedCollege,
-      programId: selectedProgram,
-      batchId: selectedBatch,
+      collegeId: selectedCollege || '',
+      programId: selectedProgram || '',
+      batchId: selectedBatch || '',
     });
     setEditingStudent(null);
   };
@@ -421,7 +429,7 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       console.log('User role:', user?.role);
       console.log('User collegeId:', user?.collegeId);
       
-      const requestBody = { sectionId: sectionId === 'none' ? null : sectionId };
+      const requestBody = { sectionId: sectionId === 'none' || !sectionId ? null : sectionId };
       console.log('Request body:', requestBody);
       
       const authHeaders = getAuthHeaders();
@@ -430,6 +438,7 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       const response = await fetch(`/api/students/${studentId}/section`, {
         method: 'PATCH',
         headers: authHeaders,
+        credentials: 'include', // Include cookies for local development
         body: JSON.stringify(requestBody),
       });
 
@@ -439,26 +448,15 @@ export function StudentManagementAdmin({ user, viewOnly = false }: { user: User;
       if (response.ok) {
         // Refresh students data
         fetchStudents();
-        toast({
-          title: 'Section Updated',
-          description: 'Student section assignment updated successfully.',
-        });
+        toast.success('Section Updated: Student section assignment updated successfully.');
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('Error response data:', errorData);
-        toast({
-          title: 'Error',
-          description: errorData.error || 'Failed to update student section.',
-          variant: 'destructive',
-        });
+        toast.error(errorData.error || 'Failed to update student section.');
       }
     } catch (error) {
       console.error('Error updating student section:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update student section.',
-        variant: 'destructive',
-      });
+      toast.error('Failed to update student section.');
     }
   };
 

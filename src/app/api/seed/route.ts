@@ -12,9 +12,11 @@ export async function POST() {
     await db.questionCOMapping.deleteMany({});
     await db.question.deleteMany({});
     await db.assessment.deleteMany({});
+    await db.teacherAssignment.deleteMany({});
     await db.cOPOMapping.deleteMany({});
     await db.cO.deleteMany({});
     await db.course.deleteMany({});
+    await db.section.deleteMany({});
     await db.batch.deleteMany({});
     await db.user.deleteMany({});
     await db.pO.deleteMany({});

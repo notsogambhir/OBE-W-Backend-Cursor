@@ -43,6 +43,11 @@ export async function GET(
 
     const { studentId } = await params;
 
+    // Add null check for studentId
+    if (!studentId) {
+      return NextResponse.json({ error: 'Student ID is required' }, { status: 400 });
+    }
+
     const student = await db.user.findUnique({
       where: { id: studentId, role: 'STUDENT' },
       include: {

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Trash2, Users, Plus } from 'lucide-react';
 import { useSidebarContext } from '@/contexts/sidebar-context';
 
@@ -95,11 +95,7 @@ export function SectionManagement({ user, viewOnly = false }: SectionManagementP
 
   const handleCreateSection = async () => {
     if (!newSectionName.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Section name is required",
-        variant: "destructive",
-      });
+      toast.error("Section name is required");
       return;
     }
     
@@ -120,25 +116,14 @@ export function SectionManagement({ user, viewOnly = false }: SectionManagementP
         const newSection = await response.json();
         setSections(prev => [...prev, newSection]);
         setNewSectionName('');
-        toast({
-          title: "Success",
-          description: `Section "${newSection.name}" created successfully`,
-        });
+        toast.success(`Section "${newSection.name}" created successfully`);
       } else {
         const error = await response.json();
-        toast({
-          title: "Error",
-          description: error.error || "Failed to create section",
-          variant: "destructive",
-        });
+        toast.error(error.error || "Failed to create section");
       }
     } catch (error) {
       console.error('Failed to create section:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create section",
-        variant: "destructive",
-      });
+      toast.error("Failed to create section");
     } finally {
       setLoading(false);
     }
@@ -162,25 +147,14 @@ export function SectionManagement({ user, viewOnly = false }: SectionManagementP
             ? { ...student, sectionId: undefined }
             : student
         ));
-        toast({
-          title: "Success",
-          description: `Section "${sectionName}" deleted successfully`,
-        });
+        toast.success(`Section "${sectionName}" deleted successfully`);
       } else {
         const error = await response.json();
-        toast({
-          title: "Error",
-          description: error.error || "Failed to delete section",
-          variant: "destructive",
-        });
+        toast.error(error.error || "Failed to delete section");
       }
     } catch (error) {
       console.error('Failed to delete section:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete section",
-        variant: "destructive",
-      });
+      toast.error("Failed to delete section");
     }
   };
 
@@ -195,34 +169,22 @@ export function SectionManagement({ user, viewOnly = false }: SectionManagementP
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ sectionId: apiSectionId }),
-        disabled: viewOnly,
       });
       
       if (response.ok) {
         setStudents(prev => prev.map(student => 
           student.id === studentId 
-            ? { ...student, sectionId: apiSectionId }
+            ? { ...student, sectionId: apiSectionId } as Student
             : student
         ));
-        toast({
-          title: "Success",
-          description: "Student section assignment updated",
-        });
+        toast.success("Student section assignment updated successfully");
       } else {
         const error = await response.json();
-        toast({
-          title: "Error",
-          description: error.error || "Failed to update student section",
-          variant: "destructive",
-        });
+        toast.error(error.error || "Failed to update student section");
       }
     } catch (error) {
       console.error('Failed to update student section:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update student section",
-        variant: "destructive",
-      });
+      toast.error("Failed to update student section");
     }
   };
 
@@ -341,7 +303,7 @@ export function SectionManagement({ user, viewOnly = false }: SectionManagementP
                 <div key={student.id} className="grid grid-cols-4 gap-4 p-4 border-t hover:bg-muted/50">
                   <div className="font-medium">{student.name}</div>
                   <div>{student.studentId}</div>
-                  <div className="text-sm text-muted-foreground">{student.email}</div>
+                  {student.email && <div className="text-sm text-muted-foreground">{student.email}</div>}
                   <div>
                     <Select
                       value={student.sectionId || 'unassigned'}
