@@ -67,6 +67,14 @@ export async function GET(
 
     const assessments = await db.assessment.findMany({
       where: whereClause,
+      include: {
+        section: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
       orderBy: {
         createdAt: 'asc'
       }
@@ -157,20 +165,46 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid section for this course' }, { status: 400 });
     }
 
-    // Create new assessment
-    const newAssessment = await db.assessment.create({
-      data: {
+    // Check if an inactive assessment with the same name already exists
+    const existingAssessment = await db.assessment.findFirst({
+      where: {
         courseId: courseId,
-        sectionId: sectionId, // Include sectionId in the assessment
+        sectionId: sectionId,
         name: name.trim(),
-        type,
-        maxMarks: parseInt(maxMarks),
-        weightage: parseFloat(weightage),
-        isActive: true
+        isActive: false
       }
     });
 
-    console.log(`Created assessment ${name} for course ${courseId}`);
+    let newAssessment;
+    
+    if (existingAssessment) {
+      // Reactivate the existing assessment instead of creating a new one
+      newAssessment = await db.assessment.update({
+        where: { id: existingAssessment.id },
+        data: {
+          type,
+          maxMarks: parseInt(maxMarks),
+          weightage: parseFloat(weightage),
+          isActive: true,
+          updatedAt: new Date()
+        }
+      });
+      console.log(`Reactivated assessment ${name} for course ${courseId}`);
+    } else {
+      // Create new assessment
+      newAssessment = await db.assessment.create({
+        data: {
+          courseId: courseId,
+          sectionId: sectionId, // Include sectionId in the assessment
+          name: name.trim(),
+          type,
+          maxMarks: parseInt(maxMarks),
+          weightage: parseFloat(weightage),
+          isActive: true
+        }
+      });
+      console.log(`Created new assessment ${name} for course ${courseId}`);
+    }
 
     return NextResponse.json(newAssessment, { status: 201 });
   } catch (error) {

@@ -155,10 +155,9 @@ export async function DELETE(
             }
           }
         },
-        _count: {
-          select: {
-            questions: true
-          }
+        questions: {
+          where: { isActive: true },
+          select: { id: true }
         }
       }
     });
@@ -178,16 +177,18 @@ export async function DELETE(
       );
     }
 
-    // Check if assessment has questions
-    if (existingAssessment._count.questions > 0) {
+    // Check if assessment has active questions
+    if (existingAssessment.questions.length > 0) {
       return NextResponse.json(
         { error: 'Cannot delete assessment with associated questions. Delete questions first.' },
         { status: 400 }
       );
     }
 
-    await db.assessment.delete({
-      where: { id: assessmentId }
+    // Soft delete the assessment by setting isActive to false
+    await db.assessment.update({
+      where: { id: assessmentId },
+      data: { isActive: false }
     });
 
     return NextResponse.json({ 

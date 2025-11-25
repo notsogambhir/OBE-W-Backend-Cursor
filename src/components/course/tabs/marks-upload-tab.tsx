@@ -189,7 +189,6 @@ export function MarksUploadTab({ courseId, courseData }: MarksUploadTabProps) {
         const wb = XLSX.utils.book_new();
         const wsData = [
           data.template.headers,
-          data.template.sampleRow,
           ...data.students.map((student: any) => [
             student.studentId,
             student.name,

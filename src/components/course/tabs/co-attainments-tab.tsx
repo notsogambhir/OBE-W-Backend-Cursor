@@ -267,7 +267,7 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
   };
 
   const averageAttainment = attainments.length > 0 
-    ? attainments.reduce((sum, a) => sum + a.attainedPercentage, 0) / attainments.length 
+    ? attainments.reduce((sum, a) => sum + (a.attainedPercentage != null && a.attainedPercentage !== undefined ? a.attainedPercentage : 0), 0) / attainments.length 
     : 0;
 
   return (
@@ -311,7 +311,9 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold">
-                      {attainment.attainedPercentage.toFixed(1)}%
+                      {attainment.attainedPercentage != null && attainment.attainedPercentage !== undefined 
+                        ? `${attainment.attainedPercentage.toFixed(1)}%` 
+                        : 'N/A'}
                     </div>
                     <div className="text-sm text-gray-600">Attained</div>
                   </div>
@@ -321,10 +323,14 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span>Target: {attainment.targetPercentage}%</span>
-                      <span>Achieved: {attainment.attainedPercentage.toFixed(1)}%</span>
+                      <span>Achieved: {attainment.attainedPercentage != null && attainment.attainedPercentage !== undefined 
+                        ? `${attainment.attainedPercentage.toFixed(1)}%` 
+                        : 'N/A'}</span>
                     </div>
                     <Progress 
-                      value={attainment.attainedPercentage} 
+                      value={attainment.attainedPercentage != null && attainment.attainedPercentage !== undefined 
+                        ? attainment.attainedPercentage 
+                        : 0} 
                       className="h-2"
                     />
                   </div>
@@ -373,7 +379,7 @@ export function COAttainmentsTab({ courseId, courseData }: COAttainmentsTabProps
           </CardHeader>
           <CardContent className="px-0 pb-0">
             <div className="text-xl font-bold">
-              {attainments.filter(a => a.attainedPercentage >= a.targetPercentage).length}/{attainments.length}
+              {attainments.filter(a => a.attainedPercentage != null && a.attainedPercentage !== undefined && a.attainedPercentage >= a.targetPercentage).length}/{attainments.length}
             </div>
           </CardContent>
         </Card>

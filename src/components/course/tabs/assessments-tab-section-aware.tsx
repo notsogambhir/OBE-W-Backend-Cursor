@@ -1,6 +1,6 @@
-'use client';
-
+// Backup current file and recreate with proper structure
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,17 @@ import {
   DialogTitle,
   DialogTrigger 
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { 
   Table, 
   TableBody, 
@@ -144,6 +155,8 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
   const [uploading, setUploading] = useState(false);
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     // Get user from localStorage
@@ -315,110 +328,56 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     }
   };
 
-  const handleSaveQuestion = async () => {
-    console.log('Frontend question creation attempt:', {
-      questionText: questionForm.question.trim(),
-      selectedCOs: questionForm.selectedCOs,
-      expandedAssessment,
-      isEditing: !!editingQuestion
-    });
+  const handleDeleteAssessment = async (assessment: Assessment) => {
+    setAssessmentToDelete(assessment);
+    setShowDeleteDialog(true);
+  };
 
-    if (!questionForm.question.trim() || questionForm.selectedCOs.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please fill in question text and select at least one CO",
-        variant: "destructive",
-      });
-      return;
-    }
+  const confirmDeleteAssessment = async () => {
+    if (!assessmentToDelete) return;
+
+    console.log('🗑️ Delete assessment clicked:', assessmentToDelete?.name, 'ID:', assessmentToDelete?.id);
+    console.log('📍 Available courseId:', courseId);
+    console.log('📍 Available course type:', typeof courseId);
 
     setLoading(true);
     try {
-      const url = editingQuestion 
-        ? `/api/courses/${courseId}/assessments/${expandedAssessment}/questions/${editingQuestion.id}`
-        : `/api/courses/${courseId}/assessments/${expandedAssessment}/questions`;
+      const deleteUrl = `/api/courses/${courseId}/assessments/${assessmentToDelete.id}`;
+      console.log('🔄 Making DELETE request to:', deleteUrl);
       
-      const method = editingQuestion ? 'PUT' : 'POST';
-      const body = {
-        question: questionForm.question.trim(),
-        maxMarks: questionForm.maxMarks,
-        coIds: questionForm.selectedCOs
-      };
-
-      console.log('Sending question request:', { url, method, body });
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
       });
 
-      console.log('Question response:', {
-        status: response.status,
-        ok: response.ok,
-        statusText: response.statusText
-      });
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response ok:', response.ok);
 
       if (response.ok) {
-        await fetchQuestions();
-        resetQuestionForm();
-        setShowQuestionDialog(false);
-        setEditingQuestion(null);
+        await fetchAssessments();
+        setShowDeleteDialog(false);
+        setAssessmentToDelete(null);
         toast({
           title: "Success",
-          description: `Question ${editingQuestion ? 'updated' : 'created'} successfully`,
+          description: "Assessment deleted successfully",
         });
       } else {
         const errorData = await response.json();
+        console.log('❌ Error response:', errorData);
         toast({
           title: "Error",
-          description: errorData.error || "Failed to save question",
+          description: errorData.error || "Failed to delete assessment",
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error('❌ Exception during delete:', error);
       toast({
         title: "Error",
-        description: "Failed to save question",
+        description: "Failed to delete assessment",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDeleteQuestion = async (questionId: string) => {
-    if (!confirm('Are you sure you want to delete this question?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/courses/${courseId}/assessments/${expandedAssessment}/questions/${questionId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        await fetchQuestions();
-        toast({
-          title: "Success",
-          description: "Question deleted successfully",
-        });
-      } else {
-        const errorData = await response.json();
-        toast({
-          title: "Error",
-          description: errorData.error || "Failed to delete question",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete question",
-        variant: "destructive",
-      });
     }
   };
 
@@ -571,121 +530,202 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     if (assessment.section) {
       return assessment.section.name;
     }
-    return 'Course Level';
+    return 'No Section';
+  };
+
+  const handleSaveQuestion = async () => {
+    if (!questionForm.question.trim() || questionForm.selectedCOs.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please fill in question text and select at least one CO",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const url = editingQuestion 
+        ? `/api/courses/${courseId}/assessments/${expandedAssessment}/questions/${editingQuestion.id}`
+        : `/api/courses/${courseId}/assessments/${expandedAssessment}/questions`;
+      
+      const method = editingQuestion ? 'PUT' : 'POST';
+      const body = {
+        question: questionForm.question.trim(),
+        maxMarks: questionForm.maxMarks,
+        coIds: questionForm.selectedCOs
+      };
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        await fetchQuestions();
+        resetQuestionForm();
+        setShowQuestionDialog(false);
+        setEditingQuestion(null);
+        toast({
+          title: "Success",
+          description: `Question ${editingQuestion ? 'updated' : 'created'} successfully`,
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to save question",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save question",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm('Are you sure you want to delete this question?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/courses/${courseId}/assessments/${expandedAssessment}/questions/${questionId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await fetchQuestions();
+        toast({
+          title: "Success",
+          description: "Question deleted successfully",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to delete question",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete question",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with Create Assessment Button */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              <CardTitle>Assessments</CardTitle>
-            </div>
-            {user && ['ADMIN', 'UNIVERSITY', 'PROGRAM_COORDINATOR', 'TEACHER'].includes(user.role) && (
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Assessment
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Assessment</DialogTitle>
-                    <DialogDescription>
-                      Create a new assessment for a specific section
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="assessment-name">Assessment Name</Label>
-                      <Input
-                        id="assessment-name"
-                        placeholder="e.g., Mid Term Examination"
-                        value={newAssessment.name}
-                        onChange={(e) => setNewAssessment(prev => ({ ...prev, name: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="assessment-type">Type</Label>
-                      <Select
-                        value={newAssessment.type}
-                        onValueChange={(value: 'exam' | 'quiz' | 'assignment' | 'project') => 
-                          setNewAssessment(prev => ({ ...prev, type: value }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="exam">Exam</SelectItem>
-                          <SelectItem value="quiz">Quiz</SelectItem>
-                          <SelectItem value="assignment">Assignment</SelectItem>
-                          <SelectItem value="project">Project</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="section-select">Section</Label>
-                      <Select
-                        value={newAssessment.sectionId}
-                        onValueChange={(value) => setNewAssessment(prev => ({ ...prev, sectionId: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select section" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getAvailableSections().map((section) => (
-                            <SelectItem key={section.id} value={section.id}>
-                              {section.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="total-marks">Total Marks</Label>
-                      <Input
-                        id="total-marks"
-                        type="number"
-                        min="1"
-                        max="1000"
-                        value={newAssessment.maxMarks}
-                        onChange={(e) => setNewAssessment(prev => ({ ...prev, maxMarks: parseInt(e.target.value) || 0 }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="weightage">Weightage (%)</Label>
-                      <Input
-                        id="weightage"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        value={newAssessment.weightage}
-                        onChange={(e) => setNewAssessment(prev => ({ ...prev, weightage: parseFloat(e.target.value) || 0 }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateAssessment} disabled={loading}>
-                      {loading ? 'Creating...' : 'Create Assessment'}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Assessments</h2>
+          <p className="text-muted-foreground">Manage assessments and questions for this course</p>
+        </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Assessment
+        </Button>
+      </div>
 
-      {/* Assessments List */}
+      {/* Assessment Creation Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Assessment</DialogTitle>
+            <DialogDescription>
+              Create a new assessment for this course. Make sure to select the appropriate section.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Assessment Name</Label>
+              <Input
+                id="name"
+                value={newAssessment.name}
+                onChange={(e) => setNewAssessment(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter assessment name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="type">Type</Label>
+              <Select
+                value={newAssessment.type}
+                onValueChange={(value) => setNewAssessment(prev => ({ ...prev, type: value as any }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assessment type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="exam">Exam</SelectItem>
+                  <SelectItem value="quiz">Quiz</SelectItem>
+                  <SelectItem value="assignment">Assignment</SelectItem>
+                  <SelectItem value="project">Project</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxMarks">Max Marks</Label>
+              <Input
+                id="maxMarks"
+                type="number"
+                value={newAssessment.maxMarks}
+                onChange={(e) => setNewAssessment(prev => ({ ...prev, maxMarks: parseInt(e.target.value) }))}
+                placeholder="Enter max marks"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="weightage">Weightage (%)</Label>
+              <Input
+                id="weightage"
+                type="number"
+                value={newAssessment.weightage}
+                onChange={(e) => setNewAssessment(prev => ({ ...prev, weightage: parseFloat(e.target.value) }))}
+                placeholder="Enter weightage percentage"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="section">Section</Label>
+              <Select
+                value={newAssessment.sectionId}
+                onValueChange={(value) => setNewAssessment(prev => ({ ...prev, sectionId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableSections().map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateAssessment} disabled={loading}>
+              {loading ? 'Creating...' : 'Create'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assessment List */}
       <Card>
         <CardHeader>
           <CardTitle>Assessment List</CardTitle>
@@ -707,107 +747,132 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
           ) : (
             <div className="space-y-4">
               {assessments.map((assessment) => (
-                <Collapsible
-                  key={assessment.id}
-                  open={expandedAssessment === assessment.id}
-                  onOpenChange={(open) => setExpandedAssessment(open ? assessment.id : null)}
-                >
-                  <CollapsibleTrigger className="w-full">
-                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center gap-3">
-                        <div className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(assessment.type)}`}>
-                          {getTypeLabel(assessment.type)}
-                        </div>
-                        <div>
-                          <div className="font-medium">{assessment.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            Section: {getSectionName(assessment)} • {assessment.maxMarks} marks • {assessment.weightage}% weight
+                <div key={assessment.id} className="border rounded-lg">
+                  <Collapsible
+                    open={expandedAssessment === assessment.id}
+                    onOpenChange={(open) => setExpandedAssessment(open ? assessment.id : null)}
+                  >
+                    <CollapsibleTrigger className="w-full">
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(assessment.type)}`}>
+                            {getTypeLabel(assessment.type)}
+                          </div>
+                          <div>
+                            <div className="font-medium">{assessment.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Section: {getSectionName(assessment)} • {assessment.maxMarks} marks • {assessment.weightage}% weight
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${expandedAssessment === assessment.id ? 'rotate-180' : ''}`} />
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-4">
-                    {/* Assessment Actions */}
-                    <div className="flex items-center gap-2 p-4 bg-gray-50 rounded">
-                      <Button variant="outline" size="sm" onClick={handleDownloadQuestionTemplate}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Download Template
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleBulkQuestionUpload}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Bulk Upload Questions
-                      </Button>
-                      <Button size="sm" onClick={() => setShowQuestionDialog(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Question
-                      </Button>
-                    </div>
-
-                    {/* Questions Table */}
-                    <div className="border rounded-lg">
-                      <div className="p-4 border-b">
-                        <h4 className="font-medium">Questions</h4>
-                      </div>
-                      {questions && questions.length > 0 ? (
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Question</TableHead>
-                              <TableHead>Max Marks</TableHead>
-                              <TableHead>COs</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {questions.map((question) => (
-                              <TableRow key={question.id}>
-                                <TableCell className="max-w-xs">
-                                  <div className="truncate" title={question.question}>
-                                    {question.question}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{question.maxMarks}</TableCell>
-                                <TableCell>
-                                  <div className="flex flex-wrap gap-1">
-                                    {question.coMappings.map((mapping) => (
-                                      <Badge key={mapping.co.id} variant="secondary" className="text-xs">
-                                        {mapping.co.code}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditQuestion(question)}
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteQuestion(question.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      ) : (
-                        <div className="p-8 text-center text-muted-foreground">
-                          No questions added yet. Click "Add Question" to get started.
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteAssessment(assessment);
+                            }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${expandedAssessment === assessment.id ? 'rotate-180' : ''}`} />
                         </div>
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-4">
+                      {/* Assessment Actions */}
+                      <div className="flex items-center gap-2 p-4 bg-gray-50 rounded">
+                        <Button variant="outline" size="sm" onClick={handleDownloadQuestionTemplate}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Download Template
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleBulkQuestionUpload}>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Bulk Upload Questions
+                        </Button>
+                        <Button size="sm" onClick={() => setShowQuestionDialog(true)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Question
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteAssessment(assessment);
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {/* Questions Table */}
+                      <div className="border rounded-lg">
+                        <div className="p-4 border-b">
+                          <h4 className="font-medium">Questions</h4>
+                        </div>
+                        {questions && questions.length > 0 ? (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Question</TableHead>
+                                <TableHead>Max Marks</TableHead>
+                                <TableHead>COs</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {questions.map((question) => (
+                                <TableRow key={question.id}>
+                                  <TableCell className="max-w-xs">
+                                    <div className="truncate" title={question.question}>
+                                      {question.question}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>{question.maxMarks}</TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                      {question.coMappings.map((mapping) => (
+                                        <Badge key={mapping.co.id} variant="secondary" className="text-xs">
+                                          {mapping.co.code}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEditQuestion(question)}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteQuestion(question.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        ) : (
+                          <div className="p-8 text-center text-muted-foreground">
+                            No questions added yet. Click "Add Question" to get started.
+                          </div>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
               ))}
             </div>
           )}
@@ -820,33 +885,34 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
           <DialogHeader>
             <DialogTitle>{editingQuestion ? 'Edit Question' : 'Add Question'}</DialogTitle>
             <DialogDescription>
-              {editingQuestion ? 'Edit the question details' : 'Add a new question to this assessment'}
+              {editingQuestion ? 'Edit question details' : 'Add a new question to this assessment'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="question-text">Question</Label>
+              <Label htmlFor="question">Question</Label>
               <textarea
-                id="question-text"
-                className="w-full min-h-[100px] p-3 border rounded-md resize-vertical"
-                placeholder="Enter the question text here..."
+                id="question"
                 value={questionForm.question}
                 onChange={(e) => setQuestionForm(prev => ({ ...prev, question: e.target.value }))}
+                placeholder="Enter question text"
+                className="w-full h-24 p-2 border rounded-md"
+                rows={3}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="max-marks">Max Marks</Label>
+              <Label htmlFor="maxMarks">Max Marks</Label>
               <Input
-                id="max-marks"
+                id="maxMarks"
                 type="number"
-                min="1"
                 value={questionForm.maxMarks}
-                onChange={(e) => setQuestionForm(prev => ({ ...prev, maxMarks: parseInt(e.target.value) || 0 }))}
+                onChange={(e) => setQuestionForm(prev => ({ ...prev, maxMarks: parseInt(e.target.value) }))}
+                placeholder="Enter max marks"
               />
             </div>
             <div className="space-y-2">
               <Label>Course Outcomes (COs)</Label>
-              <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-3">
+              <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
                 {cos.map((co) => (
                   <div key={co.id} className="flex items-center space-x-2">
                     <input
@@ -873,6 +939,33 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Assessment Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Assessment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete assessment "{assessmentToDelete?.name}"? This action cannot be undone.
+              {assessmentToDelete && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                  <strong>Note:</strong> You can only delete assessments that have no questions associated with them.
+                  If this assessment has questions, please delete the questions first.
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteAssessment}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Assessment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

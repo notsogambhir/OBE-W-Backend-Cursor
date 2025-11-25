@@ -145,12 +145,15 @@ export async function GET(
       })),
       template: {
         headers: ['Student ID', 'Student Name', 'Email', ...assessment.questions.map((q, index) => `Q${index + 1} (${q.maxMarks} marks)`)],
-        sampleRow: [
-          'STU0001',
-          'John Doe',
-          'john.doe@example.com',
-          ...assessment.questions.map(() => '0') // Default 0 marks
-        ]
+        instructions: {
+          format: 'Fill in marks for each question (0 to max marks)',
+          example: {
+            studentId: 'STU0001',
+            studentName: 'John Doe',
+            email: 'john.doe@example.com',
+            marks: assessment.questions.map(() => '0') // Default 0 marks
+          }
+        }
       }
     };
 
