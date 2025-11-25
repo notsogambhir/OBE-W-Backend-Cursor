@@ -31,8 +31,20 @@ interface StudentCO {
     coCode: string;
     percentage: number;
     attained: boolean;
+    // Enhanced data
+    totalObtainedMarks?: number;
+    totalMaxMarks?: number;
+    attemptedQuestions?: number;
+    totalQuestions?: number;
+    weightedScore?: number;
+    maxWeightedScore?: number;
   }[];
   overallAttainment: number;
+  // Enhanced summary data
+  cosAttained?: number;
+  totalCos?: number;
+  attainmentRate?: number;
+  sectionName?: string;
 }
 
 interface StudentReportsTabProps {
@@ -53,58 +65,49 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
   const fetchStudentReports = async () => {
     setLoading(true);
     try {
-      // Fetch real CO attainment data for all students in this course
-      const response = await fetch(`/api/courses/${courseId}/co-attainment`);
+      // Fetch enhanced student CO attainment data
+      const response = await fetch(`/api/courses/${courseId}/enhanced-student-attainments`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch student CO attainment data');
+        throw new Error('Failed to fetch enhanced student CO attainment data');
       }
       
       const data = await response.json();
       
       if (!data.studentAttainments || data.studentAttainments.length === 0) {
-        console.log('No student attainment data found');
+        console.log('No enhanced student attainment data found');
         setStudents([]);
         return;
       }
       
-      // Group student attainments by student
-      const studentMap = new Map<string, any>();
+      // Transform enhanced data to match expected interface
+      const students = data.studentAttainments.map((student: any) => ({
+        studentId: student.studentId,
+        studentName: student.studentName,
+        studentRollNo: student.studentRollNo || 'N/A',
+        coAttainments: student.coAttainments.map((co: any) => ({
+          coCode: co.coCode,
+          percentage: co.percentage,
+          attained: co.metTarget,
+          // Additional enhanced data
+          totalObtainedMarks: co.totalObtainedMarks,
+          totalMaxMarks: co.totalMaxMarks,
+          attemptedQuestions: co.attemptedQuestions,
+          totalQuestions: co.totalQuestions,
+          weightedScore: co.weightedScore,
+          maxWeightedScore: co.maxWeightedScore
+        })),
+        overallAttainment: student.overallAttainment,
+        // Enhanced summary data
+        cosAttained: student.cosAttained,
+        totalCos: student.totalCos,
+        attainmentRate: student.attainmentRate,
+        sectionName: student.sectionName
+      }));
       
-      data.studentAttainments.forEach((studentAttainment: any) => {
-        const studentId = studentAttainment.studentId;
-        
-        if (!studentMap.has(studentId)) {
-          studentMap.set(studentId, {
-            studentId: studentAttainment.studentId,
-            studentName: studentAttainment.studentName,
-            studentRollNo: studentAttainment.studentRollNo || 'N/A', // Use actual roll number if available
-            coAttainments: []
-          });
-        }
-        
-        const student = studentMap.get(studentId);
-        student.coAttainments.push({
-          coCode: studentAttainment.coCode,
-          percentage: Math.round(studentAttainment.percentage * 100) / 100,
-          attained: studentAttainment.metTarget
-        });
-      });
-      
-      // Calculate overall attainment for each student
-      const studentsWithOverall = Array.from(studentMap.values()).map(student => {
-        const validPercentages = student.coAttainments.map(co => co.percentage).filter(p => !isNaN(p));
-        const overallAttainment = validPercentages.length > 0 
-          ? validPercentages.reduce((sum, p) => sum + p, 0) / validPercentages.length 
-          : 0;
-        
-        return {
-          ...student,
-          overallAttainment: Math.round(overallAttainment * 100) / 100
-        };
-      });
-      
-      console.log(`📊 Loaded ${studentsWithOverall.length} students with CO attainment data`);
-      setStudents(studentsWithOverall);
+      console.log(`📊 Loaded ${students.length} students with enhanced CO attainment data`);
+      console.log('📈 Enhanced summary:', data.summary);
+      setStudents(students);
       
     } catch (error) {
       console.error('Failed to fetch student reports:', error);
@@ -182,12 +185,26 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
   };
 
   const downloadReport = () => {
-    // Create CSV content
-    const headers = ['Roll No', 'Name', 'Overall Attainment', ...students[0]?.coAttainments.map(co => co.coCode) || []];
+    // Create CSV content with enhanced data
+    const headers = [
+      'Roll No', 
+      'Name', 
+      'Section',
+      'Overall Attainment', 
+      'COs Attained',
+      'Total COs',
+      'Attainment Rate',
+      ...students[0]?.coAttainments.map(co => `${co.coCode} (%)`) || []
+    ];
+    
     const rows = filteredStudents.map(student => [
       student.studentRollNo,
       student.studentName,
+      student.sectionName || 'N/A',
       student.overallAttainment.toFixed(1) + '%',
+      student.cosAttained || 0,
+      student.totalCos || 0,
+      ((student.attainmentRate || 0)).toFixed(1) + '%',
       ...student.coAttainments.map(co => co.percentage.toFixed(1) + '%')
     ]);
     
@@ -196,7 +213,7 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `student-co-attainment-report-${courseId}.csv`;
+    a.download = `enhanced-student-co-attainment-report-${courseId}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -210,17 +227,17 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              <CardTitle>Student CO Attainment Reports</CardTitle>
+              <CardTitle>Enhanced Student CO Attainment Reports</CardTitle>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={downloadReport}>
                 <Download className="h-4 w-4 mr-2" />
-                Download Report
+                Download Enhanced Report
               </Button>
             </div>
           </div>
           <CardDescription>
-            Individual student attainment for each Course Outcome
+            Individual student attainment for each Course Outcome with enhanced calculations and section-level reporting
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -237,13 +254,15 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
             </div>
           </div>
 
-          {/* Student Table */}
+          {/* Enhanced Student Table */}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Student</TableHead>
+                  <TableHead className="text-center">Section</TableHead>
                   <TableHead className="text-center">Overall</TableHead>
+                  <TableHead className="text-center">COs Met</TableHead>
                   {coCodes.map(coCode => (
                     <TableHead key={coCode} className="text-center min-w-24">
                       {coCode}
@@ -261,9 +280,20 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
+                      <Badge variant="outline" className="text-xs">
+                        {student.sectionName || 'N/A'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
                       <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${getAttainmentColor(student.overallAttainment)}`}>
                         {getAttainmentIcon(student.overallAttainment)}
                         {student.overallAttainment.toFixed(1)}%
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="text-sm">
+                        <div className="font-medium">{student.cosAttained || 0}/{student.totalCos || 0}</div>
+                        <div className="text-gray-600">{((student.attainmentRate || 0)).toFixed(0)}%</div>
                       </div>
                     </TableCell>
                     {student.coAttainments.map((co) => (
@@ -272,6 +302,11 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
                           {getAttainmentIcon(co.percentage)}
                           {co.percentage.toFixed(1)}%
                         </div>
+                        {co.totalQuestions !== undefined && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {co.attemptedQuestions}/{co.totalQuestions} Qs
+                          </div>
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -292,7 +327,7 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
         </CardContent>
       </Card>
 
-      {/* Summary Statistics */}
+      {/* Enhanced Summary Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="pb-3">
@@ -347,12 +382,12 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
         </Card>
       </div>
 
-      {/* CO-wise Statistics */}
+      {/* Enhanced CO-wise Statistics */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">CO-wise Performance Summary</CardTitle>
+          <CardTitle className="text-lg">Enhanced CO-wise Performance Summary</CardTitle>
           <CardDescription>
-            Performance breakdown for each Course Outcome
+            Performance breakdown for each Course Outcome with enhanced metrics
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -370,6 +405,19 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
                 student.coAttainments.find(co => co.coCode === coCode && co.attained)
               ).length;
 
+              // Calculate average question attempts for this CO
+              const avgQuestionsAttempted = coStudents.length > 0 ?
+                coStudents.reduce((sum, student) => {
+                  const co = student.coAttainments.find(c => c.coCode === coCode);
+                  return sum + (co?.attemptedQuestions || 0);
+                }, 0) / coStudents.length : 0;
+
+              const avgTotalQuestions = coStudents.length > 0 ?
+                coStudents.reduce((sum, student) => {
+                  const co = student.coAttainments.find(c => c.coCode === coCode);
+                  return sum + (co?.totalQuestions || 0);
+                }, 0) / coStudents.length : 0;
+
               return (
                 <div key={coCode} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -378,9 +426,14 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
                       {avgAttainment.toFixed(1)}%
                     </Badge>
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 space-y-1">
                     <div>{attainedCount}/{coStudents.length} students attained</div>
                     <div>{coStudents.length > 0 ? ((attainedCount / coStudents.length) * 100).toFixed(0) : 0}% success rate</div>
+                    {avgQuestionsAttempted > 0 && (
+                      <div className="text-xs">
+                        Avg: {avgQuestionsAttempted.toFixed(1)}/{avgTotalQuestions.toFixed(1)} questions attempted
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -392,9 +445,9 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
       {/* Performance Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Performance Distribution</CardTitle>
+          <CardTitle className="text-lg">Enhanced Performance Distribution</CardTitle>
           <CardDescription>
-            Distribution of students across performance ranges
+            Distribution of students across performance ranges with CO attainment rates
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -421,7 +474,7 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
               <div className="text-2xl font-bold text-red-600">
                 {students.filter(s => s.overallAttainment < 60).length}
               </div>
-              <div className="text-sm text-gray-600">Needs Improvement (&lt;60%)</div>
+              <div className="text-sm text-gray-600">Below Target (&lt;60%)</div>
               <div className="text-xs text-gray-500">
                 {students.length > 0 ? ((students.filter(s => s.overallAttainment < 60).length / students.length) * 100).toFixed(0) : 0}%
               </div>

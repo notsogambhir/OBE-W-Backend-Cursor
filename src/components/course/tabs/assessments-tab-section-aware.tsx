@@ -123,6 +123,7 @@ interface Section {
 interface AssessmentsTabProps {
   courseId: string;
   courseData?: any;
+  onMarksUploaded?: (assessmentId: string) => void;
 }
 
 export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
@@ -157,6 +158,7 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
   const [sections, setSections] = useState<Section[]>([]);
   const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [marksUploadStatus, setMarksUploadStatus] = useState<{[key: string]: { hasMarks: boolean; totalQuestions: number; questionsWithMarks: number; percentage: number } }>({});
 
   useEffect(() => {
     // Get user from localStorage
@@ -193,6 +195,27 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
       fetchTeacherData();
     }
   }, [user]);
+
+  const handleRefreshMarksStatus = async (assessment: Assessment) => {
+    const status = await checkMarksUploadStatus(assessment);
+    setMarksUploadStatus(prev => ({
+      ...prev,
+      [assessment.id]: status
+    }));
+  };
+
+  useEffect(() => {
+    if (assessments.length > 0) {
+      // Check marks upload status for all assessments
+      assessments.forEach(async (assessment) => {
+        const status = await checkMarksUploadStatus(assessment);
+        setMarksUploadStatus(prev => ({
+          ...prev,
+          [assessment.id]: status
+        }));
+      });
+    }
+  }, [assessments, courseId]);
 
   const fetchTeacherData = async () => {
     try {
@@ -321,6 +344,72 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
       toast({
         title: "Error",
         description: "Failed to create assessment",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateAssessment = async () => {
+    if (!editingAssessment || !editingAssessment.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/courses/${courseId}/assessments/${editingAssessment.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingAssessment.name.trim(),
+          type: editingAssessment.type,
+          maxMarks: editingAssessment.maxMarks,
+          weightage: editingAssessment.weightage,
+          sectionId: editingAssessment.sectionId,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedAssessment = await response.json();
+        setAssessments(prev => 
+          prev.map(assessment => 
+            assessment.id === updatedAssessment.id ? updatedAssessment : assessment
+          )
+        );
+        setIsCreateDialogOpen(false);
+        setEditingAssessment(null);
+        // Reset form
+        setNewAssessment({
+          name: '',
+          type: 'exam',
+          maxMarks: 100,
+          weightage: 10,
+          sectionId: ''
+        });
+        toast({
+          title: "Success",
+          description: "Assessment updated successfully",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to update assessment",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update assessment",
         variant: "destructive",
       });
     } finally {
@@ -533,6 +622,34 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     return 'No Section';
   };
 
+  const checkMarksUploadStatus = async (assessment: Assessment) => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/assessments/${assessment.id}/questions`);
+      if (response.ok) {
+        const questions = await response.json();
+        // Check if any questions have student marks
+        const questionsWithMarks = questions.filter((question: any) => 
+          question._count?.studentMarks && question._count.studentMarks > 0
+        );
+        
+        return {
+          hasMarks: questionsWithMarks.length > 0,
+          totalQuestions: questions.length,
+          questionsWithMarks: questionsWithMarks.length,
+          percentage: questions.length > 0 ? (questionsWithMarks.length / questions.length) * 100 : 0
+        };
+      }
+    } catch (error) {
+      console.error('Error checking marks upload status:', error);
+      return {
+        hasMarks: false,
+        totalQuestions: 0,
+        questionsWithMarks: 0,
+        percentage: 0
+      };
+    }
+  };
+
   const handleSaveQuestion = async () => {
     if (!questionForm.question.trim() || questionForm.selectedCOs.length === 0) {
       toast({
@@ -643,9 +760,9 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Assessment</DialogTitle>
+            <DialogTitle>{editingAssessment ? 'Edit Assessment' : 'Create New Assessment'}</DialogTitle>
             <DialogDescription>
-              Create a new assessment for this course. Make sure to select the appropriate section.
+              {editingAssessment ? 'Update assessment details for this course.' : 'Create a new assessment for this course. Make sure to select the appropriate section.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -653,16 +770,28 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
               <Label htmlFor="name">Assessment Name</Label>
               <Input
                 id="name"
-                value={newAssessment.name}
-                onChange={(e) => setNewAssessment(prev => ({ ...prev, name: e.target.value }))}
+                value={editingAssessment ? editingAssessment.name : newAssessment.name}
+                onChange={(e) => {
+                  if (editingAssessment) {
+                    setEditingAssessment({ ...editingAssessment, name: e.target.value });
+                  } else {
+                    setNewAssessment(prev => ({ ...prev, name: e.target.value }));
+                  }
+                }}
                 placeholder="Enter assessment name"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="type">Type</Label>
               <Select
-                value={newAssessment.type}
-                onValueChange={(value) => setNewAssessment(prev => ({ ...prev, type: value as any }))}
+                value={editingAssessment ? editingAssessment.type : newAssessment.type}
+                onValueChange={(value) => {
+                  if (editingAssessment) {
+                    setEditingAssessment({ ...editingAssessment, type: value as any });
+                  } else {
+                    setNewAssessment(prev => ({ ...prev, type: value as any }));
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select assessment type" />
@@ -680,8 +809,14 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
               <Input
                 id="maxMarks"
                 type="number"
-                value={newAssessment.maxMarks}
-                onChange={(e) => setNewAssessment(prev => ({ ...prev, maxMarks: parseInt(e.target.value) }))}
+                value={editingAssessment ? editingAssessment.maxMarks : newAssessment.maxMarks}
+                onChange={(e) => {
+                  if (editingAssessment) {
+                    setEditingAssessment({ ...editingAssessment, maxMarks: parseInt(e.target.value) });
+                  } else {
+                    setNewAssessment(prev => ({ ...prev, maxMarks: parseInt(e.target.value) }));
+                  }
+                }}
                 placeholder="Enter max marks"
               />
             </div>
@@ -690,16 +825,28 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
               <Input
                 id="weightage"
                 type="number"
-                value={newAssessment.weightage}
-                onChange={(e) => setNewAssessment(prev => ({ ...prev, weightage: parseFloat(e.target.value) }))}
+                value={editingAssessment ? editingAssessment.weightage : newAssessment.weightage}
+                onChange={(e) => {
+                  if (editingAssessment) {
+                    setEditingAssessment({ ...editingAssessment, weightage: parseFloat(e.target.value) });
+                  } else {
+                    setNewAssessment(prev => ({ ...prev, weightage: parseFloat(e.target.value) }));
+                  }
+                }}
                 placeholder="Enter weightage percentage"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="section">Section</Label>
               <Select
-                value={newAssessment.sectionId}
-                onValueChange={(value) => setNewAssessment(prev => ({ ...prev, sectionId: value }))}
+                value={editingAssessment ? editingAssessment.sectionId : newAssessment.sectionId}
+                onValueChange={(value) => {
+                  if (editingAssessment) {
+                    setEditingAssessment({ ...editingAssessment, sectionId: value });
+                  } else {
+                    setNewAssessment(prev => ({ ...prev, sectionId: value }));
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select section" />
@@ -715,11 +862,22 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsCreateDialogOpen(false);
+              setEditingAssessment(null);
+              // Reset form when closing
+              setNewAssessment({
+                name: '',
+                type: 'exam',
+                maxMarks: 100,
+                weightage: 10,
+                sectionId: ''
+              });
+            }}>
               Cancel
             </Button>
-            <Button onClick={handleCreateAssessment} disabled={loading}>
-              {loading ? 'Creating...' : 'Create'}
+            <Button onClick={editingAssessment ? handleUpdateAssessment : handleCreateAssessment} disabled={loading}>
+              {loading ? (editingAssessment ? 'Updating...' : 'Creating...') : (editingAssessment ? 'Update Assessment' : 'Create Assessment')}
             </Button>
           </div>
         </DialogContent>
@@ -763,9 +921,56 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                             <div className="text-sm text-muted-foreground">
                               Section: {getSectionName(assessment)} • {assessment.maxMarks} marks • {assessment.weightage}% weight
                             </div>
+                            {/* Marks Upload Status Indicator */}
+                            {marksUploadStatus[assessment.id] && (
+                              <div className="mt-2 flex items-center gap-2">
+                                {marksUploadStatus[assessment.id].hasMarks ? (
+                                  <>
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                                      Marks Uploaded ({marksUploadStatus[assessment.id].questionsWithMarks}/{marksUploadStatus[assessment.id].totalQuestions})
+                                    </span>
+                                  </>
+                                ) : marksUploadStatus[assessment.id].totalQuestions > 0 ? (
+                                  <>
+                                    <Clock className="h-4 w-4 text-yellow-600" />
+                                    <span className="text-xs text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full">
+                                      Pending Upload ({marksUploadStatus[assessment.id].questionsWithMarks}/{marksUploadStatus[assessment.id].totalQuestions})
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleRefreshMarksStatus(assessment)}
+                                      className="ml-2"
+                                    >
+                                      <Upload className="h-3 w-3" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="h-4 w-4 text-gray-400" />
+                                    <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                                      No Questions Yet
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingAssessment(assessment);
+                              setIsCreateDialogOpen(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

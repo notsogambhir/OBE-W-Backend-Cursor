@@ -89,8 +89,10 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
   const [sections, setSections] = useState<Section[]>([]);
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [showManagementDialog, setShowManagementDialog] = useState(false);
+  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
   const [newAssessment, setNewAssessment] = useState({
     name: '',
     type: 'exam' as 'exam' | 'quiz' | 'assignment' | 'project',
@@ -250,10 +252,70 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
     setShowManagementDialog(true);
   };
 
+  const handleEditAssessment = (assessment: Assessment) => {
+    setEditingAssessment(assessment);
+    setIsEditDialogOpen(true);
+  };
+
   const handleAssessmentUpdate = () => {
     fetchAssessments();
     setShowManagementDialog(false);
     setSelectedAssessment(null);
+  };
+
+  const handleUpdateAssessment = async () => {
+    if (!editingAssessment || !editingAssessment.name.trim()) {
+      toast.error(
+        "Error",
+        "Please fill in all required fields"
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/courses/${courseId}/assessments/${editingAssessment.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingAssessment.name.trim(),
+          type: editingAssessment.type,
+          maxMarks: editingAssessment.maxMarks,
+          weightage: editingAssessment.weightage,
+          isActive: editingAssessment.isActive,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedAssessment = await response.json();
+        setAssessments(prev => 
+          prev.map(assessment => 
+            assessment.id === updatedAssessment.id ? updatedAssessment : assessment
+          )
+        );
+        setIsEditDialogOpen(false);
+        setEditingAssessment(null);
+        toast.success(
+          "Success",
+          "Assessment updated successfully"
+        );
+      } else {
+        const errorData = await response.json();
+        toast.error(
+          "Error",
+          errorData.error || "Failed to update assessment"
+        );
+      }
+    } catch (error) {
+      toast.error(
+        "Error",
+        "Failed to update assessment"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -368,6 +430,108 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Edit Assessment Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Assessment</DialogTitle>
+                  <DialogDescription>
+                    Update assessment details
+                  </DialogDescription>
+                </DialogHeader>
+                {editingAssessment && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-assessment-name">Assessment Name</Label>
+                      <Input
+                        id="edit-assessment-name"
+                        placeholder="e.g., Mid Term Examination"
+                        value={editingAssessment.name}
+                        onChange={(e) => setEditingAssessment(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-assessment-type">Type</Label>
+                      <Select
+                        value={editingAssessment.type}
+                        onValueChange={(value: 'exam' | 'quiz' | 'assignment' | 'project') => 
+                          setEditingAssessment(prev => ({ ...prev, type: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="exam">Exam</SelectItem>
+                          <SelectItem value="quiz">Quiz</SelectItem>
+                          <SelectItem value="assignment">Assignment</SelectItem>
+                          <SelectItem value="project">Project</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-assessment-section">Section</Label>
+                      <Select
+                        value={editingAssessment.sectionId || ''}
+                        onValueChange={(value: string) => 
+                          setEditingAssessment(prev => ({ ...prev, sectionId: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select section" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Sections</SelectItem>
+                          {sections.map((section) => (
+                            <SelectItem key={section.id} value={section.id}>
+                              Section {section.name} ({section._count?.students || 0} students)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-total-marks">Total Marks</Label>
+                      <Input
+                        id="edit-total-marks"
+                        type="number"
+                        min="1"
+                        max="1000"
+                        value={editingAssessment.maxMarks}
+                        onChange={(e) => setEditingAssessment(prev => ({ 
+                          ...prev, 
+                          maxMarks: parseInt(e.target.value) || 100 
+                        }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-weightage">Weightage (%)</Label>
+                      <Input
+                        id="edit-weightage"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={editingAssessment.weightage}
+                        onChange={(e) => setEditingAssessment(prev => ({ 
+                          ...prev, 
+                          weightage: parseFloat(e.target.value) || 10 
+                        }))}
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleUpdateAssessment} disabled={loading}>
+                        {loading ? 'Updating...' : 'Update Assessment'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -421,6 +585,14 @@ export function AssessmentsTab({ courseId, courseData }: AssessmentsTabProps) {
                       <TableCell>{assessment.weightage}%</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEditAssessment(assessment)}
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
                           <Button 
                             size="sm" 
                             variant="outline"

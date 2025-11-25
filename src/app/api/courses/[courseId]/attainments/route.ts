@@ -2,6 +2,130 @@ import { NextRequest, NextResponse } from 'next/server';
 import { COAttainmentCalculator } from '@/lib/co-attainment-calculator';
 import { getUserFromRequest } from '@/lib/server-auth';
 import { canCreateCourse } from '@/lib/permissions';
+import { db } from '@/lib/db';
+
+// Function to fetch existing attainments from database
+async function getStoredAttainments(courseId: string, academicYear?: string) {
+  try {
+    const coAttainments = await db.cOAttainment.findMany({
+      where: {
+        courseId,
+        academicYear: academicYear || null
+      },
+      include: {
+        co: {
+          select: {
+            code: true,
+            description: true
+          }
+        },
+        course: {
+          select: {
+            name: true,
+            code: true,
+            targetPercentage: true,
+            level1Threshold: true,
+            level2Threshold: true,
+            level3Threshold: true
+          }
+        }
+      }
+    });
+
+    if (coAttainments.length === 0) {
+      return null;
+    }
+
+    // Group by CO and calculate statistics
+    const coGroups = coAttainments.reduce((acc, attainment) => {
+      const coId = attainment.coId;
+      if (!acc[coId]) {
+        acc[coId] = {
+          coId,
+          coCode: attainment.co.code,
+          coDescription: attainment.co.description,
+          targetPercentage: attainment.course.targetPercentage,
+          level1Threshold: attainment.course.level1Threshold,
+          level2Threshold: attainment.course.level2Threshold,
+          level3Threshold: attainment.course.level3Threshold,
+          students: [],
+          totalStudents: 0,
+          studentsMeetingTarget: 0
+        };
+      }
+      
+      acc[coId].students.push({
+        studentId: attainment.studentId,
+        percentage: attainment.percentage,
+        metTarget: attainment.metTarget
+      });
+      
+      acc[coId].totalStudents++;
+      if (attainment.metTarget) {
+        acc[coId].studentsMeetingTarget++;
+      }
+      
+      return acc;
+    }, {} as any);
+
+    // Calculate final statistics for each CO
+    const coAttainmentResults = Object.values(coGroups).map(group => {
+      const averagePercentage = group.students.length > 0 
+        ? group.students.reduce((sum: number, s: any) => sum + s.percentage, 0) / group.students.length 
+        : 0;
+      
+      let attainmentLevel = 0;
+      if (averagePercentage >= group.level3Threshold) attainmentLevel = 3;
+      else if (averagePercentage >= group.level2Threshold) attainmentLevel = 2;
+      else if (averagePercentage >= group.level1Threshold) attainmentLevel = 1;
+      
+      return {
+        coId: group.coId,
+        coCode: group.coCode,
+        coDescription: group.coDescription,
+        targetPercentage: group.targetPercentage,
+        attainedPercentage: averagePercentage,
+        studentsAttained: group.studentsMeetingTarget,
+        totalStudents: group.totalStudents,
+        attainmentLevel,
+        level1Threshold: group.level1Threshold,
+        level2Threshold: group.level2Threshold,
+        level3Threshold: group.level3Threshold
+      };
+    });
+
+    return {
+      courseId,
+      courseName: coAttainments[0]?.course.name || 'Course',
+      courseCode: coAttainments[0]?.course.code || 'COURSE',
+      calculatedAt: coAttainments[0]?.calculatedAt || new Date(),
+      coAttainments: coAttainmentResults,
+      studentAttainments: coAttainments.map(attainment => ({
+        studentId: attainment.studentId,
+        coId: attainment.coId,
+        coCode: attainment.co.code,
+        percentage: attainment.percentage,
+        metTarget: attainment.metTarget
+      })),
+      summary: {
+        totalCOs: coAttainmentResults.length,
+        totalStudents: Math.max(...coAttainmentResults.map(co => co.totalStudents), 0),
+        averageAttainment: coAttainmentResults.length > 0 
+          ? coAttainmentResults.reduce((sum, co) => sum + co.attainedPercentage, 0) / coAttainmentResults.length 
+          : 0,
+        levelDistribution: {
+          level0: coAttainmentResults.filter(co => co.attainmentLevel === 0).length,
+          level1: coAttainmentResults.filter(co => co.attainmentLevel === 1).length,
+          level2: coAttainmentResults.filter(co => co.attainmentLevel === 2).length,
+          level3: coAttainmentResults.filter(co => co.attainmentLevel === 3).length,
+        }
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching stored attainments:', error);
+    return null;
+  }
+}
 
 export async function POST(
   request: NextRequest,
@@ -169,32 +293,50 @@ export async function GET(
     let result;
 
     if (coId && studentId) {
-      // Get specific student CO attainment
-      result = await COAttainmentCalculator.calculateStudentCOAttainment(
-        courseId,
-        coId,
-        studentId
-      );
+      // Get specific student CO attainment from database
+      result = await getStoredAttainments(courseId, academicYear);
+      if (result) {
+        // Filter for specific student and CO
+        result.studentAttainments = result.studentAttainments.filter(
+          (sa: any) => sa.studentId === studentId && sa.coId === coId
+        );
+      }
     } else if (coId) {
-      // Get class CO attainment for specific CO
-      result = await COAttainmentCalculator.calculateClassCOAttainment(
-        courseId,
-        coId,
-        { academicYear }
-      );
+      // Get class CO attainment for specific CO from database
+      result = await getStoredAttainments(courseId, academicYear);
+      if (result) {
+        // Filter for specific CO
+        result.coAttainments = result.coAttainments.filter((co: any) => co.coId === coId);
+        result.studentAttainments = result.studentAttainments.filter(
+          (sa: any) => sa.coId === coId
+        );
+      }
     } else {
-      // Get full course attainment
-      result = await COAttainmentCalculator.calculateCourseAttainment(
-        courseId,
-        { academicYear }
-      );
+      // Get full course attainment from database
+      result = await getStoredAttainments(courseId, academicYear);
     }
-
+    
+    // If no stored data, return empty result instead of calculating
     if (!result) {
-      return NextResponse.json(
-        { error: 'No attainment data found' },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        courseId,
+        courseName: 'Course',
+        courseCode: 'COURSE',
+        calculatedAt: new Date(),
+        coAttainments: [],
+        studentAttainments: [],
+        summary: {
+          totalCOs: 0,
+          totalStudents: 0,
+          averageAttainment: 0,
+          levelDistribution: {
+            level0: 0,
+            level1: 0,
+            level2: 0,
+            level3: 0,
+          }
+        }
+      });
     }
 
     return NextResponse.json(result);
