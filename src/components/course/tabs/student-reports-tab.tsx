@@ -46,24 +46,9 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (courseData?.enrollments) {
-      // Convert real enrollment data to student reports format
-      const realStudents: StudentCO[] = courseData.enrollments.map((enrollment: any) => ({
-        studentId: enrollment.student.id,
-        studentName: enrollment.student.name,
-        studentRollNo: enrollment.student.studentId || 'N/A',
-        coAttainments: courseData.courseOutcomes.map((co: any) => ({
-          coCode: co.code,
-          percentage: Math.floor(Math.random() * 40) + 60, // Mock attainment data
-          attained: Math.random() > 0.2
-        })),
-        overallAttainment: Math.floor(Math.random() * 30) + 65 // Mock overall attainment
-      }));
-      setStudents(realStudents);
-    } else {
-      fetchStudentReports();
-    }
-  }, [courseId, courseData]);
+    // Always fetch real CO attainment data from API
+    fetchStudentReports();
+  }, [courseId]);
 
   const fetchStudentReports = async () => {
     setLoading(true);
@@ -92,7 +77,7 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
           studentMap.set(studentId, {
             studentId: studentAttainment.studentId,
             studentName: studentAttainment.studentName,
-            studentRollNo: studentAttainment.studentName, // TODO: Add studentId field to API response
+            studentRollNo: studentAttainment.studentRollNo || 'N/A', // Use actual roll number if available
             coAttainments: []
           });
         }
@@ -118,74 +103,6 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
         };
       });
       
-      console.log(`📊 Loaded ${studentsWithOverall.length} students with CO attainment data`);
-      setStudents(studentsWithOverall);
-        {
-          studentId: '1',
-          studentName: 'Alice Johnson',
-          studentRollNo: '2021001',
-          coAttainments: [
-            { coCode: 'CO1', percentage: 85, attained: true },
-            { coCode: 'CO2', percentage: 78, attained: true },
-            { coCode: 'CO3', percentage: 65, attained: true },
-            { coCode: 'CO4', percentage: 92, attained: true },
-            { coCode: 'CO5', percentage: 88, attained: true },
-          ],
-          overallAttainment: 81.6,
-        },
-        {
-          studentId: '2',
-          studentName: 'Bob Smith',
-          studentRollNo: '2021002',
-          coAttainments: [
-            { coCode: 'CO1', percentage: 72, attained: true },
-            { coCode: 'CO2', percentage: 68, attained: true },
-            { coCode: 'CO3', percentage: 45, attained: false },
-            { coCode: 'CO4', percentage: 75, attained: true },
-            { coCode: 'CO5', percentage: 95, attained: true },
-          ],
-          overallAttainment: 71.0,
-        },
-        {
-          studentId: '3',
-          studentName: 'Charlie Brown',
-          studentRollNo: '2021003',
-          coAttainments: [
-            { coCode: 'CO1', percentage: 58, attained: false },
-            { coCode: 'CO2', percentage: 62, attained: true },
-            { coCode: 'CO3', percentage: 55, attained: false },
-            { coCode: 'CO4', percentage: 70, attained: true },
-            { coCode: 'CO5', percentage: 82, attained: true },
-          ],
-          overallAttainment: 65.4,
-        },
-        {
-          studentId: '4',
-          studentName: 'Diana Prince',
-          studentRollNo: '2021004',
-          coAttainments: [
-            { coCode: 'CO1', percentage: 92, attained: true },
-            { coCode: 'CO2', percentage: 88, attained: true },
-            { coCode: 'CO3', percentage: 76, attained: true },
-            { coCode: 'CO4', percentage: 85, attained: true },
-            { coCode: 'CO5', percentage: 90, attained: true },
-          ],
-          overallAttainment: 86.2,
-        },
-        {
-          studentId: '5',
-          studentName: 'Edward Norton',
-          studentRollNo: '2021005',
-          coAttainments: [
-            { coCode: 'CO1', percentage: 65, attained: true },
-            { coCode: 'CO2', percentage: 52, attained: false },
-            { coCode: 'CO3', percentage: 48, attained: false },
-            { coCode: 'CO4', percentage: 78, attained: true },
-            { coCode: 'CO5', percentage: 85, attained: true },
-          ],
-          overallAttainment: 65.6,
-        },
-      ];
       console.log(`📊 Loaded ${studentsWithOverall.length} students with CO attainment data`);
       setStudents(studentsWithOverall);
       

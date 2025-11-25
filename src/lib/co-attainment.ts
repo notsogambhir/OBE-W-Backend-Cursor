@@ -17,6 +17,7 @@ export interface COAttainmentResult {
 export interface StudentCOAttainment {
   studentId: string;
   studentName: string;
+  studentRollNo?: string;
   coId: string;
   coCode: string;
   percentage: number;
@@ -57,26 +58,27 @@ export class COAttainmentService {
               coId
             }
           },
-          isActive: true,
-          assessment: {
-            isActive: true
-          }
+          isActive: true
         },
         include: {
           assessment: {
             select: {
-              courseId: true
+              courseId: true,
+              isActive: true
             }
           }
         }
       });
 
-      if (questions.length === 0) {
+      // Filter for active assessments after the query
+      const activeQuestions = questions.filter(q => q.assessment && q.assessment.isActive === true);
+
+      if (activeQuestions.length === 0) {
         return { percentage: 0, metTarget: false };
       }
 
-      const questionIds = questions.map(q => q.id);
-      const courseId = questions[0].assessmentId;
+      const questionIds = activeQuestions.map(q => q.id);
+      const courseId = activeQuestions[0].assessment.courseId;
 
       // Get student marks for these questions
       const studentMarks = await db.studentMark.findMany({
@@ -91,7 +93,7 @@ export class COAttainmentService {
       let totalObtainedMarks = 0;
       let totalMaxMarks = 0;
 
-      questions.forEach(question => {
+      activeQuestions.forEach(question => {
         const studentMark = studentMarks.find(mark => mark.questionId === question.id);
         if (studentMark) {
           totalObtainedMarks += studentMark.obtainedMarks;
@@ -159,7 +161,7 @@ export class COAttainmentService {
         },
         include: {
           student: {
-            select: { id: true, name: true }
+            select: { id: true, name: true, studentId: true }
           }
         }
       });
@@ -282,7 +284,7 @@ export class COAttainmentService {
             },
             include: {
               student: {
-                select: { id: true, name: true }
+                select: { id: true, name: true, studentId: true }
               }
             }
           });
@@ -297,6 +299,7 @@ export class COAttainmentService {
             studentAttainments.push({
               studentId: enrollment.student.id,
               studentName: enrollment.student.name,
+              studentRollNo: enrollment.student.studentId || undefined, // Use actual student roll number
               coId: co.id,
               coCode: co.code,
               percentage: studentAttainment.percentage,

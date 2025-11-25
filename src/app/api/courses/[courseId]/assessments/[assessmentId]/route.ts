@@ -154,10 +154,6 @@ export async function DELETE(
               }
             }
           }
-        },
-        questions: {
-          where: { isActive: true },
-          select: { id: true }
         }
       }
     });
@@ -177,22 +173,45 @@ export async function DELETE(
       );
     }
 
-    // Check if assessment has active questions
-    if (existingAssessment.questions.length > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete assessment with associated questions. Delete questions first.' },
-        { status: 400 }
-      );
-    }
+    // Hard delete assessment and all related records
+    await db.$transaction(async (tx) => {
+      // First, get all question IDs for this assessment
+      const questions = await tx.question.findMany({
+        where: { assessmentId },
+        select: { id: true }
+      });
 
-    // Soft delete the assessment by setting isActive to false
-    await db.assessment.update({
-      where: { id: assessmentId },
-      data: { isActive: false }
+      const questionIds = questions.map(q => q.id);
+
+      // Delete all student marks for these questions
+      if (questionIds.length > 0) {
+        await tx.studentMark.deleteMany({
+          where: {
+            questionId: { in: questionIds }
+          }
+        });
+
+        // Delete all CO mappings for these questions (cascade should handle this, but being explicit)
+        await tx.questionCOMapping.deleteMany({
+          where: {
+            questionId: { in: questionIds }
+          }
+        });
+
+        // Delete all questions for this assessment
+        await tx.question.deleteMany({
+          where: { assessmentId }
+        });
+      }
+
+      // Finally, delete the assessment itself
+      await tx.assessment.delete({
+        where: { id: assessmentId }
+      });
     });
 
     return NextResponse.json({ 
-      message: 'Assessment deleted successfully',
+      message: 'Assessment and all related data (questions, marks, CO mappings) deleted permanently',
       deletedAssessment: {
         name: existingAssessment.name,
         type: existingAssessment.type,
