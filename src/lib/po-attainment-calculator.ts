@@ -383,16 +383,16 @@ export class POAttainmentCalculator {
       // Calculate direct PO attainment
       const directPOAttainment = denominator > 0 ? numerator / denominator : 0;
       
-      // Calculate indirect PO attainment
+      // Calculate indirect PO attainment (will be weighted at 0% for program-outcomes page)
       // For now, use a simple approach: average of direct attainment with some adjustment
       // In a full implementation, this would come from student surveys, alumni surveys, employer surveys
       const indirectPOAttainment = await this.calculateIndirectAttainment(po.id, courses);
       
-      // Apply weights (default: 80% direct, 20% indirect as per PRD)
-      const directWeight = 0.8;
-      const indirectWeight = 0.2;
+      // Apply weights (100% direct, 0% indirect for program-outcomes page)
+      const directWeight = 1.0;
+      const indirectWeight = 0.0;
       
-      // Final PO Attainment = (Direct_PO × W_direct) + (Indirect_PO × W_indirect)
+      // Final PO Attainment = (Direct_PO × 1.0) + (Indirect_PO × 0.0) = Direct_PO (100% direct for program-outcomes page)
       const finalPOAttainment = (directPOAttainment * directWeight) + (indirectPOAttainment * indirectWeight);
 
       // Get total COs for coverage calculation
@@ -415,7 +415,7 @@ export class POAttainmentCalculator {
       else if (attainmentLevel >= 2.0) status = 'Level 2';
       else if (attainmentLevel >= 1.5) status = 'Level 1';
 
-      console.log(`✅ PO ${po.code}: Direct=${directPOAttainment.toFixed(2)}, Final=${finalPOAttainment.toFixed(2)}, Status=${status}`);
+      console.log(`✅ PO ${po.code}: Direct=${directPOAttainment.toFixed(2)} (100% weight), Final=${finalPOAttainment.toFixed(2)}, Status=${status}`);
 
       return {
         poId: po.id,
@@ -525,7 +525,6 @@ export class POAttainmentCalculator {
       const indirectAttainment = Math.max(1.0, averageDirectAttainment * indirectFactor);
       
       console.log(`📋 Indirect attainment for PO ${poId}: ${indirectAttainment.toFixed(2)} (based on avg direct: ${averageDirectAttainment.toFixed(2)})`);
-      console.log(`🔄 PO ${poId} - Direct: ${directPOAttainment.toFixed(2)}, Indirect: ${indirectAttainment.toFixed(2)}, Final: ${finalPOAttainment.toFixed(2)}`);
       
       return Math.min(3.0, Math.max(0.0, indirectAttainment));
       
