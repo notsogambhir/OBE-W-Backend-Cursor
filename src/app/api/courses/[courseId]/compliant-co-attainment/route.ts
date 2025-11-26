@@ -77,6 +77,8 @@ export async function POST(
     const body = await request.json();
     const { academicYear } = body;
 
+    console.log(`🔄 API: CO attainment calculation requested for course: ${courseId}, academicYear: ${academicYear}`);
+
     if (!courseId) {
       return NextResponse.json(
         { error: 'Course ID is required' },
@@ -97,25 +99,41 @@ export async function POST(
       );
     }
 
+    console.log(`🔄 API: Starting batch save CO attainments for course: ${courseId}`);
+
     // Batch save CO attainments for all students
     await CompliantCOAttainmentCalculator.batchSaveCOAttainments(
       courseId,
       academicYear
     );
 
+    console.log(`✅ API: Batch save completed for course: ${courseId}`);
+
     // Return updated attainment results
     const result = await CompliantCOAttainmentCalculator.calculateComprehensiveCOAttainment(
       courseId
     );
+
+    if (!result) {
+      console.error(`❌ API: No result returned from comprehensive CO attainment for course: ${courseId}`);
+      return NextResponse.json(
+        { error: 'Failed to calculate CO attainment - no result returned' },
+        { status: 500 }
+      );
+    }
+
+    console.log(`✅ API: CO attainment calculation completed for course: ${courseId}`);
+    console.log(`📊 API Result: ${result.coAttainments.length} COs, ${result.totalStudents} students`);
 
     return NextResponse.json({
       message: 'CO attainment calculated and saved successfully',
       data: result
     });
   } catch (error) {
-    console.error('Error calculating CO attainment:', error);
+    console.error('❌ API Error calculating CO attainment:', error);
+    console.error('❌ API Error stack:', error instanceof Error ? error.stack : 'No stack available');
     return NextResponse.json(
-      { error: 'Failed to calculate CO attainment' },
+      { error: error instanceof Error ? error.message : 'Failed to calculate CO attainment' },
       { status: 500 }
     );
   }
