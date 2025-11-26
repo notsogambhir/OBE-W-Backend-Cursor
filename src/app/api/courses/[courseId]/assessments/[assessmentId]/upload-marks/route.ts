@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/server-auth';
 import { canCreateCourse, canManageCourse, canTeacherManageCourse } from '@/lib/permissions';
-import * as XLSX from 'xlsx';
 
 export async function POST(
   request: NextRequest,
@@ -62,9 +61,9 @@ export async function POST(
     }
 
     // Validate file type
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+    if (!file.name.endsWith('.csv')) {
       return NextResponse.json(
-        { error: 'Only Excel files (.xlsx, .xls) are supported' },
+        { error: 'Only CSV files (.csv) are supported' },
         { status: 400 }
       );
     }
@@ -99,23 +98,39 @@ export async function POST(
 
     // Note: sectionId is optional for assessments, allowing course-level assessments
 
-    // Read Excel file
+    // Read CSV file
     const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet);
+    const text = new TextDecoder().decode(buffer);
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    if (lines.length === 0) {
+      return NextResponse.json(
+        { error: 'CSV file is empty' },
+        { status: 400 }
+      );
+    }
 
-    console.log('📊 Excel file processed:', {
-      sheetName,
+    // Parse CSV headers
+    const headers = lines[0].split(',').map(h => h.trim());
+    const data = lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim());
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+      return row;
+    });
+
+    console.log('📊 CSV file processed:', {
+      headers,
       rowCount: data.length,
-      headers: data[0] || []
+      firstRow: data[0] || null
     });
 
     if (data.length === 0) {
-      console.log('❌ Excel file is empty');
+      console.log('❌ CSV file is empty');
       return NextResponse.json(
-        { error: 'Excel file is empty' },
+        { error: 'CSV file is empty' },
         { status: 400 }
       );
     }
@@ -189,15 +204,31 @@ export async function POST(
       const questionMarks: any[] = [];
       for (let j = 0; j < assessment.questions.length; j++) {
         const question = assessment.questions[j];
-        const markKey = `Q${j + 1}`;
-        const altMarkKey = `Question ${j + 1}`;
-        const mark = row[markKey] || row[altMarkKey] || 0;
+        const maxMarks = question.maxMarks;
+        
+        // Try different possible column names for the question
+        const possibleKeys = [
+          `Q${j + 1}`,
+          `Q${j + 1} (${maxMarks} marks)`,
+          `Question ${j + 1}`,
+          `Question ${j + 1} (${maxMarks} marks)`,
+          `Q${j + 1}(${maxMarks} marks)`,
+          `Question ${j + 1}(${maxMarks} marks)`
+        ];
+        
+        let mark = 0;
+        for (const key of possibleKeys) {
+          if (row[key] !== undefined && row[key] !== '') {
+            mark = row[key];
+            break;
+          }
+        }
         
         const obtainedMarks = parseInt(mark) || 0;
         
         // Validate marks
         if (obtainedMarks < 0 || obtainedMarks > question.maxMarks) {
-          errors.push(`Row ${i + 1}: Invalid marks for ${markKey}. Should be between 0 and ${question.maxMarks}`);
+          errors.push(`Row ${i + 1}: Invalid marks for question ${j + 1}. Should be between 0 and ${question.maxMarks}`);
           continue;
         }
 
