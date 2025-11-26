@@ -3,48 +3,48 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { 
-  Users, 
-  Download, 
-  Search, 
-  Target,
+  User, 
+  Target, 
   TrendingUp,
   TrendingDown,
-  Minus
+  Calculator,
+  RefreshCw,
+  Download,
+  Eye,
+  Plus
 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
-interface StudentCO {
+interface StudentCOAttainment {
   studentId: string;
   studentName: string;
-  studentRollNo: string;
-  coAttainments: {
-    coCode: string;
-    percentage: number;
-    attained: boolean;
-    // Enhanced data
-    totalObtainedMarks?: number;
-    totalMaxMarks?: number;
-    attemptedQuestions?: number;
-    totalQuestions?: number;
-    weightedScore?: number;
-    maxWeightedScore?: number;
-  }[];
-  overallAttainment: number;
-  // Enhanced summary data
-  cosAttained?: number;
-  totalCos?: number;
-  attainmentRate?: number;
+  studentRollNo?: string;
   sectionName?: string;
+  coId: string;
+  coCode: string;
+  percentage: number;
+  metTarget: boolean;
+  totalObtainedMarks: number;
+  totalMaxMarks: number;
+  attemptedQuestions: number;
+  totalQuestions: number;
+}
+
+interface CourseCOAttainment {
+  coId: string;
+  coCode: string;
+  coDescription: string;
+  totalStudents: number;
+  studentsMeetingTarget: number;
+  percentageMeetingTarget: number;
+  attainmentLevel: 0 | 1 | 2 | 3;
+  averageAttainment: number;
+  studentAttainments: StudentCOAttainment[];
 }
 
 interface StudentReportsTabProps {
@@ -53,172 +53,173 @@ interface StudentReportsTabProps {
 }
 
 export function StudentReportsTab({ courseId, courseData }: StudentReportsTabProps) {
-  const [students, setStudents] = useState<StudentCO[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [attainments, setAttainments] = useState<CourseCOAttainment[]>([]);
+  const [cos, setCOs] = useState<any[]>([]);
+  const [selectedCO, setSelectedCO] = useState<string>('');
+  const [selectedSection, setSelectedSection] = useState<string>('all');
   const [loading, setLoading] = useState(false);
+  const [lastCalculated, setLastCalculated] = useState<string>('');
+  const [sections, setSections] = useState<any[]>([]);
 
   useEffect(() => {
-    // Always fetch real CO attainment data from API
-    fetchStudentReports();
+    console.log(`🔄 Student Reports tab: Course changed to: ${courseId}`);
+    fetchCOs();
+    fetchAttainments();
+    fetchSections();
   }, [courseId]);
 
-  const fetchStudentReports = async () => {
-    setLoading(true);
+  const fetchCOs = async () => {
     try {
-      // Fetch enhanced student CO attainment data
-      const response = await fetch(`/api/courses/${courseId}/enhanced-student-attainments`);
+      const response = await fetch(`/api/courses/${courseId}/cos`);
+      if (response.ok) {
+        const data = await response.json();
+        setCOs(data);
+        console.log(`📊 Fetched ${data.length} COs for course ${courseId}`);
+        
+        // Set default selected CO if available and none currently selected
+        if (data.length > 0 && !selectedCO) {
+          setSelectedCO(data[0].id);
+        }
+      } else {
+        console.error('Failed to fetch COs');
+        setCOs([]);
+      }
+    } catch (error) {
+      console.error('Error fetching COs:', error);
+      setCOs([]);
+    }
+  };
+
+  const fetchAttainments = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/courses/${courseId}/compliant-co-attainment`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch enhanced student CO attainment data');
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`Failed to fetch attainments: ${errorText}`);
       }
       
       const data = await response.json();
+      console.log('📊 CO Attainment API Response:', data);
       
-      if (!data.studentAttainments || data.studentAttainments.length === 0) {
-        console.log('No enhanced student attainment data found');
-        setStudents([]);
-        return;
+      if (data && data.coAttainments) {
+        setAttainments(data.coAttainments);
+        setLastCalculated(new Date(data.calculatedAt).toLocaleString());
+        
+        // Set default selected CO if available
+        if (data.coAttainments.length > 0 && !selectedCO) {
+          setSelectedCO(data.coAttainments[0].coId);
+        }
+      } else {
+        // Handle case where no COs exist
+        console.log('ℹ️ No CO attainments found - course may not have COs defined');
+        setAttainments([]);
+        setLastCalculated('');
       }
-      
-      // Transform enhanced data to match expected interface
-      const students = data.studentAttainments.map((student: any) => ({
-        studentId: student.studentId,
-        studentName: student.studentName,
-        studentRollNo: student.studentRollNo || 'N/A',
-        coAttainments: student.coAttainments.map((co: any) => ({
-          coCode: co.coCode,
-          percentage: co.percentage,
-          attained: co.metTarget,
-          // Additional enhanced data
-          totalObtainedMarks: co.totalObtainedMarks,
-          totalMaxMarks: co.totalMaxMarks,
-          attemptedQuestions: co.attemptedQuestions,
-          totalQuestions: co.totalQuestions,
-          weightedScore: co.weightedScore,
-          maxWeightedScore: co.maxWeightedScore
-        })),
-        overallAttainment: student.overallAttainment,
-        // Enhanced summary data
-        cosAttained: student.cosAttained,
-        totalCos: student.totalCos,
-        attainmentRate: student.attainmentRate,
-        sectionName: student.sectionName
-      }));
-      
-      console.log(`📊 Loaded ${students.length} students with enhanced CO attainment data`);
-      console.log('📈 Enhanced summary:', data.summary);
-      setStudents(students);
-      
     } catch (error) {
-      console.error('Failed to fetch student reports:', error);
-      // Fallback to mock data if API fails
-      const mockStudents: StudentCO[] = [
-        {
-          studentId: '1',
-          studentName: 'Alice Johnson',
-          studentRollNo: '2021001',
-          coAttainments: [
-            { coCode: 'CO1', percentage: 85, attained: true },
-            { coCode: 'CO2', percentage: 78, attained: true },
-            { coCode: 'CO3', percentage: 65, attained: true },
-            { coCode: 'CO4', percentage: 92, attained: true },
-            { coCode: 'CO5', percentage: 88, attained: true },
-          ],
-          overallAttainment: 81.6,
-        },
-        {
-          studentId: '2',
-          studentName: 'Bob Smith',
-          studentRollNo: '2021002',
-          coAttainments: [
-            { coCode: 'CO1', percentage: 72, attained: true },
-            { coCode: 'CO2', percentage: 68, attained: true },
-            { coCode: 'CO3', percentage: 45, attained: false },
-            { coCode: 'CO4', percentage: 75, attained: true },
-            { coCode: 'CO5', percentage: 95, attained: true },
-          ],
-          overallAttainment: 71.0,
-        },
-        {
-          studentId: '3',
-          studentName: 'Charlie Brown',
-          studentRollNo: '2021003',
-          coAttainments: [
-            { coCode: 'CO1', percentage: 90, attained: true },
-            { coCode: 'CO2', percentage: 82, attained: true },
-            { coCode: 'CO3', percentage: 77, attained: true },
-            { coCode: 'CO4', percentage: 68, attained: false },
-            { coCode: 'CO5', percentage: 85, attained: true },
-          ],
-          overallAttainment: 80.4,
-        },
-      ];
-      setStudents(mockStudents);
+      console.error('Failed to fetch attainments:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch student CO attainment data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredStudents = students.filter(student =>
-    student.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.studentRollNo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getAttainmentColor = (percentage: number, target: number = 60) => {
-    if (percentage >= target) return 'text-green-600 bg-green-50';
-    if (percentage >= target * 0.8) return 'text-yellow-600 bg-yellow-50';
-    return 'text-red-600 bg-red-50';
+  const fetchSections = async () => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/sections`);
+      if (response.ok) {
+        const data = await response.json();
+        setSections(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch sections:', error);
+    }
   };
 
-  const getAttainmentIcon = (percentage: number, target: number = 60) => {
-    if (percentage >= target) return <TrendingUp className="h-4 w-4" />;
-    if (percentage >= target * 0.8) return <Minus className="h-4 w-4" />;
-    return <TrendingDown className="h-4 w-4" />;
+  const getAttainmentLevelColor = (level: number) => {
+    switch (level) {
+      case 1: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 2: return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 3: return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-red-100 text-red-800 border-red-200';
+    }
   };
 
-  const getCOCount = (attained: boolean) => {
-    if (students.length === 0) return { count: 0, percentage: 0 };
-    const count = students.filter(student => 
-      student.coAttainments.filter(co => co.attained === attained).length
-    ).length;
-    return { count, percentage: (count / students.length) * 100 };
+  const getAttainmentLevelLabel = (level: number) => {
+    switch (level) {
+      case 1: return 'Level 1';
+      case 2: return 'Level 2';
+      case 3: return 'Level 3';
+      default: return 'Not Attained';
+    }
   };
 
-  const downloadReport = () => {
-    // Create CSV content with enhanced data
+  const getProgressColor = (percentage: number, target: number) => {
+    if (percentage >= target) return 'bg-green-500';
+    if (percentage >= target * 0.8) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  const selectedCOData = attainments.find(co => co.coId === selectedCO);
+
+  const filteredStudentAttainments = selectedCOData ? 
+    (selectedSection === 'all' 
+      ? selectedCOData.studentAttainments 
+      : selectedCOData.studentAttainments.filter(student => student.sectionName === selectedSection)
+    ) : [];
+
+  const averageAttainment = filteredStudentAttainments.length > 0 
+    ? filteredStudentAttainments.reduce((sum, s) => sum + s.percentage, 0) / filteredStudentAttainments.length 
+    : 0;
+
+  const studentsMeetingTarget = filteredStudentAttainments.filter(s => s.metTarget).length;
+
+  const exportToCSV = () => {
+    if (!selectedCOData) return;
+
     const headers = [
-      'Roll No', 
-      'Name', 
-      'Section',
-      'Overall Attainment', 
-      'COs Attained',
-      'Total COs',
-      'Attainment Rate',
-      ...students[0]?.coAttainments.map(co => `${co.coCode} (%)`) || []
+      'Student ID', 'Student Name', 'Section', 'CO Code', 'Percentage', 
+      'Met Target', 'Obtained Marks', 'Max Marks', 'Attempted Questions', 'Total Questions'
     ];
     
-    const rows = filteredStudents.map(student => [
-      student.studentRollNo,
+    const rows = filteredStudentAttainments.map(student => [
+      student.studentRollNo || '',
       student.studentName,
-      student.sectionName || 'N/A',
-      student.overallAttainment.toFixed(1) + '%',
-      student.cosAttained || 0,
-      student.totalCos || 0,
-      ((student.attainmentRate || 0)).toFixed(1) + '%',
-      ...student.coAttainments.map(co => co.percentage.toFixed(1) + '%')
+      student.sectionName || '',
+      student.coCode,
+      student.percentage.toFixed(2),
+      student.metTarget ? 'Yes' : 'No',
+      student.totalObtainedMarks,
+      student.totalMaxMarks,
+      student.attemptedQuestions,
+      student.totalQuestions
     ]);
-    
-    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `enhanced-student-co-attainment-report-${courseId}.csv`;
+    a.download = `student-co-attainment-${selectedCOData.coCode}.csv`;
+    document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
-  };
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-  const coCodes = students[0]?.coAttainments.map(co => co.coCode) || [];
+    toast({
+      title: "Export Successful",
+      description: "Student CO attainment data exported to CSV",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -226,260 +227,251 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <CardTitle>Enhanced Student CO Attainment Reports</CardTitle>
+              <User className="h-5 w-5" />
+              <CardTitle>Student CO Attainment Reports</CardTitle>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={downloadReport}>
-                <Download className="h-4 w-4 mr-2" />
-                Download Enhanced Report
+              <Button variant="outline" onClick={fetchAttainments} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Refreshing...' : 'Refresh'}
               </Button>
             </div>
           </div>
-          <CardDescription>
-            Individual student attainment for each Course Outcome with enhanced calculations and section-level reporting
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Search */}
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search students by name or roll number..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Enhanced Student Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead className="text-center">Section</TableHead>
-                  <TableHead className="text-center">Overall</TableHead>
-                  <TableHead className="text-center">COs Met</TableHead>
-                  {coCodes.map(coCode => (
-                    <TableHead key={coCode} className="text-center min-w-24">
-                      {coCode}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow key={student.studentId}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{student.studentName}</div>
-                        <div className="text-sm text-gray-600">{student.studentRollNo}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="text-xs">
-                        {student.sectionName || 'N/A'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${getAttainmentColor(student.overallAttainment)}`}>
-                        {getAttainmentIcon(student.overallAttainment)}
-                        {student.overallAttainment.toFixed(1)}%
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="text-sm">
-                        <div className="font-medium">{student.cosAttained || 0}/{student.totalCos || 0}</div>
-                        <div className="text-gray-600">{((student.attainmentRate || 0)).toFixed(0)}%</div>
-                      </div>
-                    </TableCell>
-                    {student.coAttainments.map((co) => (
-                      <TableCell key={co.coCode} className="text-center">
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${getAttainmentColor(co.percentage)}`}>
-                          {getAttainmentIcon(co.percentage)}
-                          {co.percentage.toFixed(1)}%
-                        </div>
-                        {co.totalQuestions !== undefined && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {co.attemptedQuestions}/{co.totalQuestions} Qs
-                          </div>
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {filteredStudents.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
-              <p className="text-gray-600">
-                {searchTerm ? 'Try adjusting your search terms' : 'No student data available'}
+          {lastCalculated && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Last Calculated:</strong> {lastCalculated}
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Enhanced Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{students.length}</div>
-            <p className="text-xs text-gray-600">Enrolled students</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Above Target</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {students.filter(s => s.overallAttainment >= 60).length}
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Course Outcome</label>
+              <Select value={selectedCO} onValueChange={setSelectedCO}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select CO" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cos.map((co) => (
+                    <SelectItem key={co.id} value={co.id}>
+                      {co.code} - {co.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <p className="text-xs text-gray-600">
-              {students.length > 0 ? ((students.filter(s => s.overallAttainment >= 60).length / students.length) * 100).toFixed(0) : 0}% of class
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Class Average</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {students.length > 0 ? (students.reduce((sum, s) => sum + s.overallAttainment, 0) / students.length).toFixed(1) : 0}%
+            
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Section</label>
+              <Select value={selectedSection} onValueChange={setSelectedSection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Sections" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sections</SelectItem>
+                  {sections.map((section) => (
+                    <SelectItem key={section.id} value={section.name}>
+                      {section.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <p className="text-xs text-gray-600">Average attainment</p>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {students.length > 0 ? 
-                students.filter(s => s.overallAttainment >= 80).length > 0 ? 'Good' : 
-                students.filter(s => s.overallAttainment >= 60).length > 0 ? 'Average' : 'Poor'
-                : 'N/A'
-              }
-            </div>
-            <p className="text-xs text-gray-600">Overall class performance</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Enhanced CO-wise Statistics */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Enhanced CO-wise Performance Summary</CardTitle>
-          <CardDescription>
-            Performance breakdown for each Course Outcome with enhanced metrics
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {coCodes.map(coCode => {
-              const coStudents = students.filter(student => 
-                student.coAttainments.find(co => co.coCode === coCode)
-              );
-              const avgAttainment = coStudents.length > 0 ? 
-                coStudents.reduce((sum, student) => {
-                  const co = student.coAttainments.find(c => c.coCode === coCode);
-                  return sum + (co?.percentage || 0);
-                }, 0) / coStudents.length : 0;
-              const attainedCount = coStudents.filter(student => 
-                student.coAttainments.find(co => co.coCode === coCode && co.attained)
-              ).length;
-
-              // Calculate average question attempts for this CO
-              const avgQuestionsAttempted = coStudents.length > 0 ?
-                coStudents.reduce((sum, student) => {
-                  const co = student.coAttainments.find(c => c.coCode === coCode);
-                  return sum + (co?.attemptedQuestions || 0);
-                }, 0) / coStudents.length : 0;
-
-              const avgTotalQuestions = coStudents.length > 0 ?
-                coStudents.reduce((sum, student) => {
-                  const co = student.coAttainments.find(c => c.coCode === coCode);
-                  return sum + (co?.totalQuestions || 0);
-                }, 0) / coStudents.length : 0;
-
-              return (
-                <div key={coCode} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold">{coCode}</h3>
-                    <Badge className={avgAttainment >= 60 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {avgAttainment.toFixed(1)}%
+          {selectedCOData && (
+            <>
+              {/* CO Summary */}
+              <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <h4 className="font-semibold text-lg mb-1">{selectedCOData.coCode}</h4>
+                    <p className="text-sm text-gray-600">{selectedCOData.coDescription}</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">
+                      {selectedCOData.percentageMeetingTarget.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-gray-600">Class Success Rate</div>
+                  </div>
+                  <div className="text-center">
+                    <Badge className={getAttainmentLevelColor(selectedCOData.attainmentLevel)}>
+                      {getAttainmentLevelLabel(selectedCOData.attainmentLevel)}
                     </Badge>
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div>{attainedCount}/{coStudents.length} students attained</div>
-                    <div>{coStudents.length > 0 ? ((attainedCount / coStudents.length) * 100).toFixed(0) : 0}% success rate</div>
-                    {avgQuestionsAttempted > 0 && (
-                      <div className="text-xs">
-                        Avg: {avgQuestionsAttempted.toFixed(1)}/{avgTotalQuestions.toFixed(1)} questions attempted
-                      </div>
-                    )}
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">
+                      {selectedCOData.averageAttainment.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-gray-600">Average Attainment</div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+              </div>
 
-      {/* Performance Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Enhanced Performance Distribution</CardTitle>
-          <CardDescription>
-            Distribution of students across performance ranges with CO attainment rates
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                {students.filter(s => s.overallAttainment >= 80).length}
+              {/* Student Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <Card className="p-3">
+                  <CardHeader className="pb-2 px-0 pt-0">
+                    <CardTitle className="text-xs font-medium">Total Students</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-0 pb-0">
+                    <div className="text-xl font-bold">{filteredStudentAttainments.length}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="p-3">
+                  <CardHeader className="pb-2 px-0 pt-0">
+                    <CardTitle className="text-xs font-medium">Target Met</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-0 pb-0">
+                    <div className="text-xl font-bold">{studentsMeetingTarget}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="p-3">
+                  <CardHeader className="pb-2 px-0 pt-0">
+                    <CardTitle className="text-xs font-medium">Success Rate</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-0 pb-0">
+                    <div className="text-xl font-bold">
+                      {filteredStudentAttainments.length > 0 
+                        ? ((studentsMeetingTarget / filteredStudentAttainments.length) * 100).toFixed(1) 
+                        : '0'}%
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="p-3">
+                  <CardHeader className="pb-2 px-0 pt-0">
+                    <CardTitle className="text-xs font-medium">Average Score</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-0 pb-0">
+                    <div className="text-xl font-bold">{averageAttainment.toFixed(1)}%</div>
+                  </CardContent>
+                </Card>
               </div>
-              <div className="text-sm text-gray-600">Excellent (≥80%)</div>
-              <div className="text-xs text-gray-500">
-                {students.length > 0 ? ((students.filter(s => s.overallAttainment >= 80).length / students.length) * 100).toFixed(0) : 0}%
+
+              {/* Export Button */}
+              <div className="flex justify-end mb-4">
+                <Button variant="outline" onClick={exportToCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export to CSV
+                </Button>
+              </div>
+
+              {/* Student Details Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Student Attainment Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Student ID</TableHead>
+                          <TableHead>Student Name</TableHead>
+                          <TableHead>Section</TableHead>
+                          <TableHead>CO Score</TableHead>
+                          <TableHead>Target Met</TableHead>
+                          <TableHead>Questions Attempted</TableHead>
+                          <TableHead>Performance</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredStudentAttainments.map((student) => (
+                          <TableRow key={student.studentId}>
+                            <TableCell className="font-medium">{student.studentRollNo || '-'}</TableCell>
+                            <TableCell>{student.studentName}</TableCell>
+                            <TableCell>{student.sectionName || '-'}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{student.percentage.toFixed(1)}%</span>
+                                {student.metTarget ? (
+                                  <TrendingUp className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4 text-red-600" />
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={student.metTarget ? "default" : "destructive"}>
+                                {student.metTarget ? 'Yes' : 'No'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {student.attemptedQuestions}/{student.totalQuestions}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Progress 
+                                  value={student.percentage} 
+                                  className="flex-1 h-2"
+                                />
+                                <span className="text-sm text-gray-600 min-w-12">
+                                  {student.totalObtainedMarks}/{student.totalMaxMarks}
+                                </span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {!selectedCO && cos.length === 0 && (
+            <div className="text-center py-8">
+              <Calculator className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No Course Outcomes Defined</h3>
+              <p className="text-gray-500 mb-4">
+                This course doesn't have any Course Outcomes (COs) defined yet.
+              </p>
+              <p className="text-sm text-gray-400 mb-6">
+                CO attainment calculations require Course Outcomes to be defined first.
+              </p>
+              <div className="flex justify-center gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = `/courses/${courseId}/manage?tab=cos`}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Define Course Outcomes
+                </Button>
+                <Button onClick={fetchAttainments} disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
               </div>
             </div>
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">
-                {students.filter(s => s.overallAttainment >= 60 && s.overallAttainment < 80).length}
-              </div>
-              <div className="text-sm text-gray-600">Good (60-79%)</div>
-              <div className="text-xs text-gray-500">
-                {students.length > 0 ? ((students.filter(s => s.overallAttainment >= 60 && s.overallAttainment < 80).length / students.length) * 100).toFixed(0) : 0}%
-              </div>
+          )}
+
+          {selectedCO && cos.length > 0 && !selectedCOData && (
+            <div className="text-center py-8">
+              <Calculator className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No Student Data Available</h3>
+              <p className="text-gray-500 mb-4">
+                No student attainment data found for the selected Course Outcome.
+              </p>
+              <p className="text-sm text-gray-400 mb-6">
+                Student CO attainment data will appear once marks are uploaded for assessments containing this CO.
+              </p>
+              <Button onClick={fetchAttainments} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </Button>
             </div>
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-red-600">
-                {students.filter(s => s.overallAttainment < 60).length}
-              </div>
-              <div className="text-sm text-gray-600">Below Target (&lt;60%)</div>
-              <div className="text-xs text-gray-500">
-                {students.length > 0 ? ((students.filter(s => s.overallAttainment < 60).length / students.length) * 100).toFixed(0) : 0}%
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

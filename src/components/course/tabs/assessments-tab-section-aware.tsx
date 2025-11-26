@@ -178,6 +178,13 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [currentAssessmentForUpload, setCurrentAssessmentForUpload] = useState<Assessment | null>(null);
+  
+  // Bulk question upload state
+  const [bulkQuestionFile, setBulkQuestionFile] = useState<File | null>(null);
+  const [bulkUploadResults, setBulkUploadResults] = useState<any>(null);
+  const [showBulkUploadDialog, setShowBulkUploadDialog] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
+  const [showDeleteQuestionDialog, setShowDeleteQuestionDialog] = useState(false);
 
   useEffect(() => {
     // Get user from localStorage
@@ -547,15 +554,13 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
         });
       } else {
         const errorData = await response.json();
-        console.error('❌ Template API error:', errorData);
         toast({
           title: "Error",
-          description: errorData.error || "Failed to download template",
+          description: errorData.error || "Failed to generate template",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('❌ Template download error:', error);
       toast({
         title: "Error",
         description: "Failed to download template",
@@ -567,53 +572,50 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
   };
 
   const handleUploadMarksClick = (assessment: Assessment) => {
+    // Always open upload dialog for marks upload (initial or replacement)
+    setCurrentAssessmentForUpload(assessment);
+    setShowMarksDialog(true);
+    setUploadResults(null);
+    setUploadFile(null);
+    setUploadedMarks(null); // Clear any existing marks view
+  };
+
+  const handleViewMarksClick = (assessment: Assessment) => {
+    // Only open view dialog for viewing existing marks
     setCurrentAssessmentForUpload(assessment);
     setUploadFile(null);
     setUploadResults(null);
-    setShowMarksDialog(true);
+    handleViewUploadedMarks(assessment.id);
   };
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.name.endsWith('.csv')) {
-        setUploadFile(file);
-        handleFilePreview(file);
-      } else {
-        toast({
-          title: "Error",
-          description: "Please upload a CSV file",
-          variant: "destructive",
-        });
-      }
-    }
-  }, []);
-
-  const handleFilePreview = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+      
+      // Read and preview CSV
+      const reader = new FileReader();
+      reader.onload = (e) => {
         const text = e.target?.result as string;
         const lines = text.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim());
-        const rows = lines.slice(1, 6).map(line => line.split(',').map(cell => cell.trim()));
         
-        setPreviewData({
-          fileName: file.name,
-          headers,
-          rows,
-          totalRows: lines.length - 1
-        });
-        setShowPreviewDialog(true);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to read CSV file preview",
-          variant: "destructive",
-        });
-      }
-    };
-    reader.readAsText(file);
+        if (lines.length > 0) {
+          const headers = lines[0].split(',').map(h => h.trim());
+          const rows = lines.slice(1, 6).map(line => 
+            line.split(',').map(cell => cell.trim())
+          );
+          
+          setPreviewData({
+            fileName: file.name,
+            headers,
+            rows,
+            totalRows: lines.length - 1
+          });
+          setShowPreviewDialog(true);
+        }
+      };
+      reader.readAsText(file);
+    }
   }, []);
 
   const handleUploadMarks = async () => {
@@ -694,6 +696,275 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
       toast({
         title: "Error",
         description: "Failed to fetch uploaded marks",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Question management functions
+  const handleDownloadQuestionTemplate = async (assessmentId: string) => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`/api/courses/${courseId}/assessments/${assessmentId}/template`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (!data.questions || data.questions.length === 0) {
+          toast({
+            title: "Error",
+            description: "No questions found for this assessment",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Create CSV content for questions
+        const csvContent = [
+          ['Question', 'Max Marks', 'CO Codes'],
+          ...data.questions.map((q: any) => [
+            `"${q.question.replace(/"/g, '""')}"`, // Escape quotes
+            q.maxMarks,
+            q.coMappings.map((m: any) => m.co.code).join(';')
+          ])
+        ].join('\n');
+        
+        // Download CSV file
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${data.assessment.name}_Questions_Template.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Success",
+          description: "Questions template downloaded successfully",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to download questions template",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download questions template",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkQuestionUpload = (assessmentId: string) => {
+    const assessment = assessments.find(a => a.id === assessmentId);
+    if (assessment) {
+      setCurrentAssessmentForUpload(assessment);
+      setShowBulkUploadDialog(true);
+    }
+  };
+
+  const handleSaveQuestion = async () => {
+    if (!questionForm.question.trim() || questionForm.selectedCOs.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please fill in question text and select at least one CO",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const url = editingQuestion 
+        ? `/api/courses/${courseId}/assessments/${expandedAssessment}/questions/${editingQuestion.id}`
+        : `/api/courses/${courseId}/assessments/${expandedAssessment}/questions`;
+      
+      const method = editingQuestion ? 'PUT' : 'POST';
+      const body = editingQuestion 
+        ? {
+            question: questionForm.question.trim(),
+            maxMarks: questionForm.maxMarks,
+            coIds: questionForm.selectedCOs
+          }
+        : {
+            question: questionForm.question.trim(),
+            maxMarks: questionForm.maxMarks,
+            coIds: questionForm.selectedCOs
+          };
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        await fetchQuestions();
+        setQuestionForm({ question: '', maxMarks: 10, selectedCOs: [] });
+        setEditingQuestion(null);
+        setShowQuestionDialog(false);
+        toast({
+          title: "Success",
+          description: `Question ${editingQuestion ? 'updated' : 'created'} successfully`,
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || `Failed to ${editingQuestion ? 'update' : 'create'} question`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to ${editingQuestion ? 'update' : 'create'} question`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditQuestion = (question: Question) => {
+    setEditingQuestion(question);
+    setQuestionForm({
+      question: question.question,
+      maxMarks: question.maxMarks,
+      selectedCOs: question.coMappings.map(m => m.co.id)
+    });
+    setShowQuestionDialog(true);
+  };
+
+  const handleDeleteQuestion = (questionId: string) => {
+    setQuestionToDelete(questionId);
+    setShowDeleteQuestionDialog(true);
+  };
+
+  const confirmDeleteQuestion = async () => {
+    if (!questionToDelete) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/courses/${courseId}/assessments/${expandedAssessment}/questions/${questionToDelete}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await fetchQuestions();
+        setShowDeleteQuestionDialog(false);
+        setQuestionToDelete(null);
+        toast({
+          title: "Success",
+          description: "Question deleted successfully",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to delete question",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete question",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkQuestionUploadSubmit = async () => {
+    if (!bulkQuestionFile || !currentAssessmentForUpload) {
+      toast({
+        title: "Error",
+        description: "Please select a file to upload",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const text = await bulkQuestionFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      // Validate headers
+      if (!headers.includes('Question') || !headers.includes('Max Marks')) {
+        toast({
+          title: "Error",
+          description: "Invalid CSV format. Required columns: Question, Max Marks",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const questions = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        if (values.length >= 2 && values[0]) {
+          questions.push({
+            question: values[0],
+            maxMarks: parseInt(values[1]) || 10,
+            coCodes: values[2] ? values[2].split(';').filter(c => c.trim()) : []
+          });
+        }
+      }
+
+      if (questions.length === 0) {
+        toast({
+          title: "Error",
+          description: "No valid questions found in CSV file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/courses/${courseId}/assessments/${currentAssessmentForUpload.id}/questions/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ questions }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setBulkUploadResults(result);
+        await fetchQuestions();
+        toast({
+          title: "Success",
+          description: result.message || "Questions uploaded successfully",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to upload questions",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process CSV file",
         variant: "destructive",
       });
     } finally {
@@ -823,13 +1094,26 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
                           <Download className="h-4 w-4 mr-2" />
                           Download CSV Template
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleUploadMarksClick(assessment)}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Marks
+                        
+                        {/* View Marks Button - always visible but disabled if no marks exist */}
+                        <Button
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleViewMarksClick(assessment)}
+                          disabled={!marksUploadStatus[assessment.id]?.hasMarks}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Marks
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleViewUploadedMarks(assessment.id)}>
-                          <FileText className="h-4 w-4 mr-2" />
-                          View Uploaded Marks
+                        
+                        {/* Upload Marks Button - always visible for initial upload or replacement */}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleUploadMarksClick(assessment)}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          {marksUploadStatus[assessment.id]?.hasMarks ? 'Replace Marks' : 'Upload Marks'}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleDownloadQuestionTemplate(assessment.id)}>
                           <Download className="h-4 w-4 mr-2" />
@@ -936,17 +1220,27 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
         </CardContent>
       </Card>
 
-      {/* Upload Marks Dialog */}
-      <Dialog open={showMarksDialog} onOpenChange={setShowMarksDialog}>
+      {/* Upload/View Marks Dialog */}
+      <Dialog open={showMarksDialog} onOpenChange={(open) => {
+        setShowMarksDialog(open);
+        if (!open) {
+          setUploadedMarks(null);
+          setUploadResults(null);
+          setUploadFile(null);
+          setCurrentAssessmentForUpload(null);
+        }
+      }}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {uploadedMarks ? 'Uploaded Marks' : 'Upload Student Marks'}
+              {uploadedMarks ? 'View Uploaded Marks' : 'Upload Student Marks'}
             </DialogTitle>
             <DialogDescription>
               {uploadedMarks 
-                ? 'View the uploaded marks for this assessment'
-                : 'Upload marks for students in this assessment'
+                ? 'View uploaded marks for this assessment (read-only)'
+                : currentAssessmentForUpload && marksUploadStatus[currentAssessmentForUpload.id]?.hasMarks
+                  ? 'Upload new marks to replace all existing marks for this assessment'
+                  : 'Upload marks for students in this assessment'
               }
             </DialogDescription>
           </DialogHeader>
@@ -1051,11 +1345,13 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
                   setUploadFile(null);
                   setCurrentAssessmentForUpload(null);
                 }}>
-                  Cancel
+                  {uploadedMarks ? 'Close' : 'Cancel'}
                 </Button>
-                <Button onClick={handleUploadMarks} disabled={!uploadFile || uploading}>
-                  {uploading ? 'Uploading...' : 'Upload Marks'}
-                </Button>
+                {!uploadedMarks && (
+                  <Button onClick={handleUploadMarks} disabled={!uploadFile || uploading}>
+                    {uploading ? 'Uploading...' : 'Upload Marks'}
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -1068,7 +1364,7 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
           <DialogHeader>
             <DialogTitle>File Preview</DialogTitle>
             <DialogDescription>
-              Preview of the CSV file: {previewData?.fileName}
+              Preview of CSV file: {previewData?.fileName}
             </DialogDescription>
           </DialogHeader>
           
@@ -1097,12 +1393,6 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
                     ))}
                   </TableBody>
                 </Table>
-              </div>
-              
-              <div className="flex justify-end">
-                <Button onClick={() => setShowPreviewDialog(false)}>
-                  Close Preview
-                </Button>
               </div>
             </div>
           )}
@@ -1149,7 +1439,7 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="exam">Exam</SelectItem>
@@ -1167,12 +1457,13 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
                 value={editingAssessment ? editingAssessment.maxMarks : newAssessment.maxMarks}
                 onChange={(e) => {
                   if (editingAssessment) {
-                    setEditingAssessment({ ...editingAssessment, maxMarks: parseInt(e.target.value) });
+                    setEditingAssessment({ ...editingAssessment, maxMarks: parseInt(e.target.value) || 0 });
                   } else {
-                    setNewAssessment({ ...newAssessment, maxMarks: parseInt(e.target.value) });
+                    setNewAssessment({ ...newAssessment, maxMarks: parseInt(e.target.value) || 0 });
                   }
                 }}
-                placeholder="Enter max marks"
+                placeholder="Enter maximum marks"
+                min="1"
               />
             </div>
             <div className="space-y-2">
@@ -1183,19 +1474,21 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
                 value={editingAssessment ? editingAssessment.weightage : newAssessment.weightage}
                 onChange={(e) => {
                   if (editingAssessment) {
-                    setEditingAssessment({ ...editingAssessment, weightage: parseFloat(e.target.value) });
+                    setEditingAssessment({ ...editingAssessment, weightage: parseInt(e.target.value) || 0 });
                   } else {
-                    setNewAssessment({ ...newAssessment, weightage: parseFloat(e.target.value) });
+                    setNewAssessment({ ...newAssessment, weightage: parseInt(e.target.value) || 0 });
                   }
                 }}
                 placeholder="Enter weightage percentage"
+                min="0"
+                max="100"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="section">Section</Label>
               <Select
                 value={editingAssessment ? editingAssessment.sectionId : newAssessment.sectionId}
-                onValueChange={(value) => {
+                onValueChange={(value: string) => {
                   if (editingAssessment) {
                     setEditingAssessment({ ...editingAssessment, sectionId: value });
                   } else {
@@ -1220,24 +1513,18 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
             <Button variant="outline" onClick={() => {
               setIsCreateDialogOpen(false);
               setEditingAssessment(null);
-              setNewAssessment({
-                name: '',
-                type: 'exam',
-                maxMarks: 100,
-                weightage: 10,
-                sectionId: ''
-              });
+              setNewAssessment({ name: '', type: 'exam', maxMarks: 100, weightage: 10, sectionId: '' });
             }}>
               Cancel
             </Button>
             <Button onClick={editingAssessment ? handleUpdateAssessment : handleCreateAssessment} disabled={loading}>
-              {loading ? (editingAssessment ? 'Updating...' : 'Creating...') : (editingAssessment ? 'Update Assessment' : 'Create Assessment')}
+              {loading ? 'Saving...' : (editingAssessment ? 'Update' : 'Create')}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Assessment Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1254,37 +1541,182 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Question Create/Edit Dialog */}
+      <Dialog open={showQuestionDialog} onOpenChange={setShowQuestionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingQuestion ? 'Edit Question' : 'Add New Question'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingQuestion ? 'Edit question details' : 'Add a new question to this assessment'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="question">Question</Label>
+              <textarea
+                id="question"
+                className="w-full min-h-[100px] p-3 border rounded-md resize-y"
+                value={questionForm.question}
+                onChange={(e) => setQuestionForm({ ...questionForm, question: e.target.value })}
+                placeholder="Enter question text"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxMarks">Max Marks</Label>
+              <Input
+                id="maxMarks"
+                type="number"
+                value={questionForm.maxMarks}
+                onChange={(e) => setQuestionForm({ ...questionForm, maxMarks: parseInt(e.target.value) || 0 })}
+                placeholder="Enter maximum marks"
+                min="1"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Course Outcomes (COs)</Label>
+              <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto border rounded-md p-2">
+                {cos.map((co) => (
+                  <div key={co.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`co-${co.id}`}
+                      checked={questionForm.selectedCOs.includes(co.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setQuestionForm({ ...questionForm, selectedCOs: [...questionForm.selectedCOs, co.id] });
+                        } else {
+                          setQuestionForm({ ...questionForm, selectedCOs: questionForm.selectedCOs.filter(id => id !== co.id) });
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`co-${co.id}`} className="text-sm">
+                      {co.code}: {co.description}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowQuestionDialog(false);
+              setEditingQuestion(null);
+              setQuestionForm({ question: '', maxMarks: 10, selectedCOs: [] });
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveQuestion} disabled={loading}>
+              {loading ? 'Saving...' : (editingQuestion ? 'Update' : 'Create')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Question Upload Dialog */}
+      <Dialog open={showBulkUploadDialog} onOpenChange={setShowBulkUploadDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Bulk Upload Questions</DialogTitle>
+            <DialogDescription>
+              Upload questions from a CSV file. Format: Question, Max Marks, CO Codes (semicolon separated)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {currentAssessmentForUpload && (
+              <div className="p-4 bg-gray-50 rounded">
+                <h4 className="font-medium">{currentAssessmentForUpload.name}</h4>
+                <p className="text-sm text-muted-foreground">
+                  Section: {getSectionName(currentAssessmentForUpload)} • {currentAssessmentForUpload.maxMarks} marks
+                </p>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="bulk-file">Select CSV File</Label>
+              <Input
+                id="bulk-file"
+                type="file"
+                accept=".csv"
+                onChange={(e) => setBulkQuestionFile(e.target.files?.[0] || null)}
+                disabled={uploading}
+              />
+            </div>
+
+            {bulkQuestionFile && (
+              <div className="p-4 bg-blue-50 rounded">
+                <p className="text-sm font-medium">Selected file: {bulkQuestionFile.name}</p>
+                <p className="text-sm text-muted-foreground">Size: {(bulkQuestionFile.size / 1024).toFixed(2)} KB</p>
+              </div>
+            )}
+
+            {bulkUploadResults && (
+              <div className="p-4 bg-green-50 rounded">
+                <p className="text-sm font-medium text-green-800">
+                  Upload completed successfully!
+                </p>
+                <p className="text-sm text-green-700">
+                  {bulkUploadResults.questions?.length || 0} questions processed
+                </p>
+              </div>
+            )}
+
+            <div className="p-4 bg-gray-50 rounded">
+              <p className="text-sm font-medium mb-2">CSV Format Example:</p>
+              <div className="text-xs font-mono bg-white p-2 rounded border">
+                Question,Max Marks,CO Codes<br/>
+                "What is a process?",10,"CO1"<br/>
+                "Explain deadlock prevention",15,"CO1;CO2"
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowBulkUploadDialog(false);
+              setBulkQuestionFile(null);
+              setBulkUploadResults(null);
+              setCurrentAssessmentForUpload(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleBulkQuestionUploadSubmit} disabled={!bulkQuestionFile || uploading}>
+              {uploading ? 'Uploading...' : 'Upload Questions'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Question Confirmation Dialog */}
+      <AlertDialog open={showDeleteQuestionDialog} onOpenChange={setShowDeleteQuestionDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Question</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this question? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteQuestion} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+}
 
-  // Helper functions for question management (simplified for this example)
-  function handleDownloadQuestionTemplate(assessmentId: string) {
-    // Implementation for downloading question template
-    toast({
-      title: "Info",
-      description: "Question template download feature coming soon",
-    });
-  }
-
-  function handleBulkQuestionUpload(assessmentId: string) {
-    // Implementation for bulk question upload
-    toast({
-      title: "Info", 
-      description: "Bulk question upload feature coming soon",
-    });
-  }
-
-  function handleEditQuestion(question: Question) {
-    // Implementation for editing question
-    setEditingQuestion(question);
-    setShowQuestionDialog(true);
-  }
-
-  function handleDeleteQuestion(questionId: string) {
-    // Implementation for deleting question
-    toast({
-      title: "Info",
-      description: "Delete question feature coming soon",
-    });
-  }
+// Helper function to download blob
+function downloadBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
 }

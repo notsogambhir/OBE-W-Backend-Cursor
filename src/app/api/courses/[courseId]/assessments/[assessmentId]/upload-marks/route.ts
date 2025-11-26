@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/server-auth';
 import { canCreateCourse, canManageCourse, canTeacherManageCourse } from '@/lib/permissions';
+import { CompliantCOAttainmentCalculator } from '@/lib/compliant-co-attainment-calculator';
 
 export async function POST(
   request: NextRequest,
@@ -290,6 +291,17 @@ export async function POST(
         }
       }
     });
+
+    // Trigger CO attainment calculation after marks upload
+    try {
+      console.log('🔄 Triggering CO attainment calculation after marks upload...');
+      await CompliantCOAttainmentCalculator.batchSaveCOAttainments(courseId, academicYear);
+      console.log('✅ CO attainment calculation completed successfully');
+    } catch (coError) {
+      console.error('⚠️ Error calculating CO attainment after marks upload:', coError);
+      // Don't fail the marks upload if CO calculation fails
+      // Log the error but continue with success response
+    }
 
     return NextResponse.json({
       message: 'Marks uploaded successfully',
