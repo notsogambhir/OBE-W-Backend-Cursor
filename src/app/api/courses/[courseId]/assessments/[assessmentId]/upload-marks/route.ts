@@ -41,7 +41,7 @@ export async function POST(
     
     // For teachers, check if they're assigned to this course/section
     if (user.role === 'TEACHER' && !hasPermission) {
-      hasPermission = await canTeacherManageCourse(user.id, courseId, assessment.sectionId || undefined);
+      hasPermission = await canTeacherManageCourse(user.id, courseId, assessment?.sectionId || undefined);
     }
     
     if (!hasPermission) {

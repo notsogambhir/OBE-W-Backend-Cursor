@@ -95,18 +95,7 @@ export class CompliantCOAttainmentCalculator {
           }
         },
         include: {
-          question: {
-            include: {
-              assessment: {
-                select: {
-                  id: true,
-                  name: true,
-                  type: true,
-                  sectionId: true
-                }
-              }
-            }
-          }
+          question: true
         }
       });
 
@@ -143,9 +132,12 @@ export class CompliantCOAttainmentCalculator {
         const question = coQuestionMappings.find(m => m.questionId === mark.questionId);
         if (!question) continue;
 
+        // Get maxMarks from the nested question object
+        const maxMarks = question.question?.maxMarks || question.maxMarks;
+        
         // Student attempted this question (including if they scored 0)
         totalObtainedMarks += mark.obtainedMarks;
-        totalMaxMarks += question.maxMarks;
+        totalMaxMarks += maxMarks;
         attemptedQuestions++;
       }
 
@@ -386,21 +378,27 @@ export class CompliantCOAttainmentCalculator {
     try {
       console.log(`📊 Calculating course CO attainment for CO ${coId}, course ${courseId}`);
 
-      // Get course details for thresholds
+      // Get course details with batch and sections for thresholds
       const course = await db.course.findUnique({
         where: { id: courseId },
-        select: {
-          name: true,
-          code: true,
-          targetPercentage: true,
-          level1Threshold: true,
-          level2Threshold: true,
-          level3Threshold: true
+        include: {
+          batch: {
+            include: {
+              sections: true
+            }
+          }
         }
       });
 
       if (!course) {
         console.log(`❌ Course ${courseId} not found`);
+        return null;
+      }
+
+      const sections = course.batch.sections;
+
+      if (sections.length === 0) {
+        console.log(`❌ No sections found for course ${courseId}`);
         return null;
       }
 
@@ -415,20 +413,6 @@ export class CompliantCOAttainmentCalculator {
 
       if (!co) {
         console.log(`❌ CO ${coId} not found`);
-        return null;
-      }
-
-      // Get all sections for this course
-      const sections = await db.section.findMany({
-        where: {
-          course: {
-            courseId: courseId
-          }
-        }
-      });
-
-      if (sections.length === 0) {
-        console.log(`❌ No sections found for course ${courseId}`);
         return null;
       }
 
@@ -483,7 +467,7 @@ export class CompliantCOAttainmentCalculator {
         coCode: co.code,
         coDescription: co.description,
         totalStudents,
-        studentsMeetingTarget,
+        totalStudentsMeetingTarget,
         percentageMeetingTarget: Math.round(percentageMeetingTarget * 100) / 100,
         attainmentLevel,
         targetPercentage: course.targetPercentage,

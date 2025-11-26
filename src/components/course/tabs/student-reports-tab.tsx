@@ -132,10 +132,13 @@ export function StudentReportsTab({ courseId, courseData }: StudentReportsTabPro
 
   const fetchSections = async () => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/sections`);
+      const response = await fetch(`/api/courses/${courseId}/roster`);
       if (response.ok) {
         const data = await response.json();
-        setSections(data);
+        // Extract sections from student data
+        const uniqueSections = [...new Set(data.map((student: any) => student.sectionName).filter(Boolean))];
+        const sectionsData = uniqueSections.map((name: string) => ({ id: name, name }));
+        setSections(sectionsData);
       }
     } catch (error) {
       console.error('Failed to fetch sections:', error);
