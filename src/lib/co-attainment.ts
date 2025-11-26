@@ -375,8 +375,9 @@ export class COAttainmentService {
     try {
       await db.cOAttainment.upsert({
         where: {
-          courseId_coId_studentId_academicYear: {
+          courseId_sectionId_coId_studentId_academicYear: {
             courseId,
+            sectionId: null, // Course-level attainment, not section-specific
             coId,
             studentId,
             academicYear: academicYear || ''

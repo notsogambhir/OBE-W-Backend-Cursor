@@ -472,8 +472,9 @@ export class COAttainmentCalculator {
         data.map(item =>
           db.cOAttainment.upsert({
             where: {
-              courseId_coId_studentId_academicYear: {
+              courseId_sectionId_coId_studentId_academicYear: {
                 courseId: item.courseId,
+                sectionId: null, // Course-level attainment, not section-specific
                 coId: item.coId,
                 studentId: item.studentId,
                 academicYear: item.academicYear
