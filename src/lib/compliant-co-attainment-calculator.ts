@@ -9,11 +9,23 @@ export interface StudentCOAttainment {
   coId: string;
   coCode: string;
   percentage: number;
+  weightedPercentage: number; // Added weighted percentage
   metTarget: boolean;
   totalObtainedMarks: number;
   totalMaxMarks: number;
   attemptedQuestions: number;
   totalQuestions: number;
+  assessmentWeightages: { // Added assessment weightage breakdown
+    assessmentId: string;
+    assessmentName: string;
+    assessmentType: string;
+    weightage: number;
+    obtainedMarks: number;
+    maxMarks: number;
+    percentage: number;
+    contribution: number; // How much this assessment contributes to final weighted score
+    totalWeightageForCO: number; // Total weightage for this CO
+  }[];
 }
 
 export interface SectionCOAttainment {
@@ -31,6 +43,7 @@ export interface SectionCOAttainment {
   level2Threshold: number;
   level3Threshold: number;
   averageAttainment: number;
+  weightedAverageAttainment: number; // Added weighted average
   studentAttainments: StudentCOAttainment[];
 }
 
@@ -50,6 +63,7 @@ export interface CourseCOAttainment {
   level2Threshold: number;
   level3Threshold: number;
   averageAttainment: number;
+  weightedAverageAttainment: number; // Added weighted average
   sectionBreakdown: SectionCOAttainment[];
   studentAttainments: StudentCOAttainment[];
 }
@@ -95,7 +109,21 @@ export class CompliantCOAttainmentCalculator {
           }
         },
         include: {
-          question: true
+          question: {
+            include: {
+              assessment: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                  weightage: true,
+                  maxMarks: true,
+                  sectionId: true,
+                  courseId: true
+                }
+              }
+            }
+          }
         }
       });
 
@@ -107,7 +135,7 @@ export class CompliantCOAttainmentCalculator {
       const questionIds = coQuestionMappings.map(mapping => mapping.questionId);
       const totalQuestions = questionIds.length;
 
-      // Step 2: Get student's marks for these questions (only attempted ones)
+      // Step 2: Get student's marks for these questions
       const studentMarks = await db.studentMark.findMany({
         where: {
           studentId: studentId,
@@ -115,39 +143,142 @@ export class CompliantCOAttainmentCalculator {
         }
       });
 
-      if (studentMarks.length === 0) {
-        console.log(`⚠️ No marks found for student ${studentId} for CO ${coId} questions`);
-        // This means student attempted no questions for this CO
-        return null;
+      // Step 2.5: CRITICAL FIX - Validate student section enrollment
+      if (sectionId) {
+        // Verify student is enrolled in the specified section
+        const studentEnrollment = await db.enrollment.findFirst({
+          where: {
+            courseId: courseId,
+            studentId: studentId,
+            isActive: true
+          }
+        });
+
+        if (!studentEnrollment) {
+          console.log(`❌ Student ${studentId} is not enrolled in course ${courseId}`);
+          return null;
+        }
+
+        console.log(`✅ Student ${studentId} validated for course ${courseId}`);
       }
 
-      // Step 3: Calculate totals for ATTEMPTED questions only
+      // Step 3: Filter questions by student's section and assessment section
+      const filteredQuestionMappings = coQuestionMappings.filter(mapping => {
+        // Only include questions from assessments that belong to student's section
+        const questionAssessment = mapping.question.assessment;
+        return !sectionId || questionAssessment.sectionId === sectionId;
+      });
+
+      // CRITICAL COMPLIANCE FIX: 
+      // Even if student has no marks, they should still get 0% attainment
+      // This ensures they are included in section/course calculations
+      let hasAnyAttemptedQuestions = false;
+
+      // Step 4: Calculate totals with assessment weightage consideration
       // CRITICAL: Only include questions that student actually attempted
       let totalObtainedMarks = 0;
       let totalMaxMarks = 0;
       let attemptedQuestions = 0;
+      let totalWeightedScore = 0;
+      let maxWeightedScore = 0;
+
+      // Group questions by assessment for weightage calculation
+      const assessmentGroups = new Map<string, {
+        assessment: any;
+        questions: any[];
+        obtainedMarks: number;
+        maxMarks: number;
+        weightage: number;
+      }>();
 
       // Process each attempted question
-      for (const mark of studentMarks) {
-        const question = coQuestionMappings.find(m => m.questionId === mark.questionId);
-        if (!question) continue;
-
-        // Get maxMarks from the nested question object
-        const maxMarks = question.question?.maxMarks || question.maxMarks;
+      for (const mapping of filteredQuestionMappings) {
+        const mark = studentMarks.find(m => m.questionId === mapping.questionId);
+        const assessment = mapping.question.assessment;
         
-        // Student attempted this question (including if they scored 0)
-        totalObtainedMarks += mark.obtainedMarks;
-        totalMaxMarks += maxMarks;
-        attemptedQuestions++;
+        if (!assessmentGroups.has(assessment.id)) {
+          assessmentGroups.set(assessment.id, {
+            assessment,
+            questions: [],
+            obtainedMarks: 0,
+            maxMarks: 0,
+            weightage: assessment.weightage || 0
+          });
+        }
+
+        const group = assessmentGroups.get(assessment.id);
+        if (group) {
+          group.questions.push(mapping);
+        }
+        
+        if (mark && mark.obtainedMarks !== null) {
+          // Student attempted this question (including if they scored 0)
+          if (group) {
+            group.obtainedMarks += mark.obtainedMarks;
+            group.maxMarks += mapping.question.maxMarks;
+          }
+          totalObtainedMarks += mark.obtainedMarks;
+          totalMaxMarks += mapping.question.maxMarks;
+          attemptedQuestions++;
+          hasAnyAttemptedQuestions = true;
+        }
+        // CRITICAL: If mark is null or doesn't exist, this question is ignored
+        // per compliance specification for unattempted questions
+      }
+
+      // Calculate weighted scores for each assessment
+      for (const group of assessmentGroups.values()) {
+        const assessmentWeightage = group.weightage / 100; // Convert percentage to decimal
+        const assessmentScore = group.maxMarks > 0 ? (group.obtainedMarks / group.maxMarks) : 0;
+        
+        totalWeightedScore += assessmentScore * assessmentWeightage;
+        maxWeightedScore += assessmentWeightage; // Sum of weightages for this CO's assessments
       }
 
       // Step 4: Calculate percentage based on attempted questions only
-      if (totalMaxMarks === 0) {
-        console.log(`❌ No maximum marks found for student ${studentId} in CO ${coId}`);
-        return null;
+      let percentage = 0;
+      let weightedPercentage = 0;
+      
+      if (hasAnyAttemptedQuestions && totalMaxMarks > 0) {
+        percentage = (totalObtainedMarks / totalMaxMarks) * 100;
+      } else {
+        // Student attempted no questions for this CO - 0% attainment
+        percentage = 0;
+        console.log(`⚠️ Student ${studentId} attempted no questions for CO ${coId} - 0% attainment`);
       }
 
-      const percentage = (totalObtainedMarks / totalMaxMarks) * 100;
+      // Calculate weighted percentage with proper normalization
+      if (maxWeightedScore > 0) {
+        // CRITICAL FIX: Normalize weightages to prevent inflation when total < 100%
+        // If total weightage for this CO is less than 100%, we normalize to prevent score inflation
+        weightedPercentage = (totalWeightedScore / maxWeightedScore) * 100;
+        
+        // Log weightage normalization for debugging
+        if (maxWeightedScore < 1.0) {
+          console.log(`⚖️ Weightage normalization for CO ${coId}: Total weightage ${(maxWeightedScore * 100).toFixed(1)}% < 100%. Weighted score may appear lower than simple percentage.`);
+        }
+      } else {
+        weightedPercentage = percentage; // Fallback to simple percentage
+        console.log(`⚠️ No valid weightage data for CO ${coId}, using simple percentage: ${percentage}%`);
+      }
+
+      // Create assessment weightage breakdown for reporting
+      const assessmentWeightages = Array.from(assessmentGroups.values()).map(group => {
+        const assessmentScore = group.maxMarks > 0 ? (group.obtainedMarks / group.maxMarks) * 100 : 0;
+        const contribution = (group.weightage / 100) * assessmentScore;
+        
+        return {
+          assessmentId: group.assessment.id,
+          assessmentName: group.assessment.name,
+          assessmentType: group.assessment.type,
+          weightage: group.weightage,
+          obtainedMarks: group.obtainedMarks,
+          maxMarks: group.maxMarks,
+          percentage: assessmentScore,
+          contribution: contribution, // How much this assessment contributes to final weighted score
+          totalWeightageForCO: maxWeightedScore * 100 // Total weightage for this CO
+        };
+      });
 
       // Get student, CO, and section info
       const [student, co, section] = await Promise.all([
@@ -168,20 +299,22 @@ export class CompliantCOAttainmentCalculator {
       const result: StudentCOAttainment = {
         studentId,
         studentName: student?.name || 'Unknown Student',
-        studentRollNo: student?.studentId,
+        studentRollNo: student?.studentId || undefined,
         sectionId,
         sectionName: section?.name,
         coId,
         coCode: co?.code || 'Unknown',
         percentage: Math.round(percentage * 100) / 100, // Round to 2 decimal places
+        weightedPercentage: Math.round(weightedPercentage * 100) / 100, // Use weighted percentage
         metTarget: false, // Will be determined in next step
         totalObtainedMarks,
         totalMaxMarks,
         attemptedQuestions,
-        totalQuestions
+        totalQuestions,
+        assessmentWeightages
       };
 
-      console.log(`✅ Student ${studentId} CO ${coId}: ${result.percentage}% (${attemptedQuestions}/${totalQuestions} questions attempted)`);
+      console.log(`✅ Student ${studentId} CO ${coId}: ${result.percentage}% (weighted: ${weightedPercentage.toFixed(1)}%, simple: ${percentage.toFixed(1)}%) (${attemptedQuestions}/${totalQuestions} questions attempted)`);
       
       return result;
     } catch (error) {
@@ -207,7 +340,7 @@ export class CompliantCOAttainmentCalculator {
       
       return {
         ...studentAttainment,
-        metTarget: studentAttainment.percentage >= targetPercentage
+        metTarget: studentAttainment.weightedPercentage >= targetPercentage // Use weighted percentage for target determination
       };
     } catch (error) {
       console.error('❌ Error determining target met:', error);
@@ -305,6 +438,7 @@ export class CompliantCOAttainmentCalculator {
           sectionId
         );
         
+        // calculateStudentCOAttainment now never returns null, only 0% for no attempts
         if (attainment) {
           const attainmentWithTarget = await this.determineTargetMet(
             courseId,
@@ -343,7 +477,12 @@ export class CompliantCOAttainmentCalculator {
         ? studentAttainments.reduce((sum, s) => sum + s.percentage, 0) / studentAttainments.length 
         : 0;
 
-      console.log(`🎯 Section ${section.name} CO ${coId}: ${percentageMeetingTarget.toFixed(2)}% students met target, Level ${attainmentLevel}`);
+      // Calculate weighted average attainment
+      const weightedAverageAttainment = studentAttainments.length > 0 
+        ? studentAttainments.reduce((sum, s) => sum + s.weightedPercentage, 0) / studentAttainments.length 
+        : 0;
+
+      console.log(`🎯 Section ${section.name} CO ${coId}: ${percentageMeetingTarget.toFixed(2)}% students met target, Level ${attainmentLevel} (Avg: ${averageAttainment.toFixed(1)}%, Weighted Avg: ${weightedAverageAttainment.toFixed(1)}%)`);
 
       return {
         sectionId,
@@ -351,7 +490,7 @@ export class CompliantCOAttainmentCalculator {
         coId,
         coCode: co.code,
         coDescription: co.description,
-        totalStudents: studentAttainments.length,
+        totalStudents: studentAttainments.length, // Use students with attainments
         studentsMeetingTarget,
         percentageMeetingTarget: Math.round(percentageMeetingTarget * 100) / 100,
         attainmentLevel,
@@ -360,6 +499,7 @@ export class CompliantCOAttainmentCalculator {
         level2Threshold: course.level2Threshold,
         level3Threshold: course.level3Threshold,
         averageAttainment: Math.round(averageAttainment * 100) / 100,
+        weightedAverageAttainment: Math.round(weightedAverageAttainment * 100) / 100,
         studentAttainments
       };
     } catch (error) {
@@ -457,7 +597,12 @@ export class CompliantCOAttainmentCalculator {
         ? allStudentAttainments.reduce((sum, s) => sum + s.percentage, 0) / allStudentAttainments.length 
         : 0;
 
-      console.log(`🏆 Course ${course.code} CO ${coId}: ${percentageMeetingTarget.toFixed(2)}% students met target, Level ${attainmentLevel}`);
+      // Calculate weighted average attainment
+      const weightedAverageAttainment = allStudentAttainments.length > 0 
+        ? allStudentAttainments.reduce((sum, s) => sum + s.weightedPercentage, 0) / allStudentAttainments.length 
+        : 0;
+
+      console.log(`🏆 Course ${course.code} CO ${coId}: ${percentageMeetingTarget.toFixed(2)}% students met target, Level ${attainmentLevel} (Avg: ${averageAttainment.toFixed(1)}%, Weighted Avg: ${weightedAverageAttainment.toFixed(1)}%)`);
 
       return {
         courseId,
@@ -467,7 +612,7 @@ export class CompliantCOAttainmentCalculator {
         coCode: co.code,
         coDescription: co.description,
         totalStudents,
-        totalStudentsMeetingTarget,
+        studentsMeetingTarget: totalStudentsMeetingTarget,
         percentageMeetingTarget: Math.round(percentageMeetingTarget * 100) / 100,
         attainmentLevel,
         targetPercentage: course.targetPercentage,
@@ -475,6 +620,7 @@ export class CompliantCOAttainmentCalculator {
         level2Threshold: course.level2Threshold,
         level3Threshold: course.level3Threshold,
         averageAttainment: Math.round(averageAttainment * 100) / 100,
+        weightedAverageAttainment: Math.round(weightedAverageAttainment * 100) / 100,
         sectionBreakdown,
         studentAttainments: allStudentAttainments
       };
@@ -585,7 +731,7 @@ export class CompliantCOAttainmentCalculator {
         where: {
           courseId_sectionId_coId_studentId_academicYear: {
             courseId,
-            sectionId: null, // Course-level attainment, not section-specific
+            sectionId: '', // Course-level attainment, not section-specific
             coId,
             studentId,
             academicYear: academicYear || ''

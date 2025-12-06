@@ -916,7 +916,7 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
         return;
       }
 
-      const questions = [];
+      const questions: any[] = [];
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
         if (values.length >= 2 && values[0]) {
@@ -1267,11 +1267,11 @@ export function AssessmentsTabSectionAware({ courseId, courseData }: Assessments
                         <TableCell>{student.studentId}</TableCell>
                         <TableCell>{student.name}</TableCell>
                         <TableCell>{student.email}</TableCell>
-                        {student.questions?.map((marks: number, qIndex: number) => (
-                          <TableCell key={qIndex}>{marks}</TableCell>
+                        {student.questions?.map((marks: number | null, qIndex: number) => (
+                          <TableCell key={qIndex}>{marks ?? '-'}</TableCell>
                         ))}
                         <TableCell className="font-medium">
-                          {student.questions?.reduce((sum: number, marks: number) => sum + marks, 0) || 0}
+                          {student.questions?.reduce((sum: number, marks: number | null) => sum + (marks ?? 0), 0) || 0}
                         </TableCell>
                       </TableRow>
                     ))}

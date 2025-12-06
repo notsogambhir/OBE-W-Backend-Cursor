@@ -125,7 +125,7 @@ export async function GET(
     });
 
     // Organize marks by student and question
-    const marksMap: { [studentId: string]: { [questionId: string]: number } } = {};
+    const marksMap: { [studentId: string]: { [questionId: string]: number | null } } = {};
     studentMarks.forEach(mark => {
       if (!marksMap[mark.studentId]) {
         marksMap[mark.studentId] = {};
@@ -136,10 +136,10 @@ export async function GET(
     // Create response data
     const responseData = enrollments.map(enrollment => {
       const student = enrollment.student;
-      const questions: number[] = [];
+      const questions: (number | null)[] = [];
       
       assessment.questions.forEach(question => {
-        questions.push(marksMap[student.id]?.[question.id] || 0);
+        questions.push(marksMap[student.id]?.[question.id] ?? null);
       });
 
       return {

@@ -52,7 +52,14 @@ export class COAttainmentService {
     studentId: string,
     coId: string,
     academicYear?: string
-  ): Promise<{ percentage: number; metTarget: boolean }> {
+  ): Promise<{ 
+    percentage: number; 
+    metTarget: boolean;
+    totalObtainedMarks?: number;
+    totalMaxMarks?: number;
+    attemptedQuestions?: number;
+    totalQuestions?: number;
+  }> {
     try {
       // Get all questions mapped to this CO
       const questions = await db.question.findMany({
@@ -78,7 +85,14 @@ export class COAttainmentService {
       const activeQuestions = questions.filter(q => q.assessment && q.assessment.isActive === true);
 
       if (activeQuestions.length === 0) {
-        return { percentage: 0, metTarget: false };
+        return { 
+          percentage: 0, 
+          metTarget: false,
+          totalObtainedMarks: 0,
+          totalMaxMarks: 0,
+          attemptedQuestions: 0,
+          totalQuestions: 0
+        };
       }
 
       const questionIds = activeQuestions.map(q => q.id);
@@ -101,7 +115,7 @@ export class COAttainmentService {
 
       activeQuestions.forEach(question => {
         const studentMark = studentMarks.find(mark => mark.questionId === question.id);
-        if (studentMark) {
+        if (studentMark && studentMark.obtainedMarks !== null) {
           // Student attempted this question (including if they scored 0)
           totalObtainedMarks += studentMark.obtainedMarks;
           totalMaxMarks += question.maxMarks;
@@ -377,7 +391,7 @@ export class COAttainmentService {
         where: {
           courseId_sectionId_coId_studentId_academicYear: {
             courseId,
-            sectionId: null, // Course-level attainment, not section-specific
+            sectionId: '', // Course-level attainment, not section-specific
             coId,
             studentId,
             academicYear: academicYear || ''

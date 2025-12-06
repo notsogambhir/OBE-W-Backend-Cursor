@@ -36,20 +36,10 @@ export async function POST(
       role: user.role
     });
 
-    // Check permissions - admins/PCs can manage course, teachers can upload if assigned
+    // Check permissions - admins/PCs can manage course, teachers need to be assigned
     let hasPermission = canManageCourse(user) || canCreateCourse(user);
     
-    // For teachers, check if they're assigned to this course/section
-    if (user.role === 'TEACHER' && !hasPermission) {
-      hasPermission = await canTeacherManageCourse(user.id, courseId, assessment?.sectionId || undefined);
-    }
-    
-    if (!hasPermission) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions to upload marks' },
-        { status: 403 }
-      );
-    }
+    // For teachers, we'll check assignment after fetching the assessment
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -94,6 +84,18 @@ export async function POST(
       return NextResponse.json(
         { error: 'Assessment not found' },
         { status: 404 }
+      );
+    }
+
+    // Now check teacher permissions after we have the assessment
+    if (user.role === 'TEACHER' && !hasPermission) {
+      hasPermission = await canTeacherManageCourse(user.id, courseId, assessment.sectionId || undefined);
+    }
+    
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to upload marks' },
+        { status: 403 }
       );
     }
 
@@ -217,7 +219,7 @@ export async function POST(
           `Question ${j + 1}(${maxMarks} marks)`
         ];
         
-        let mark = 0;
+        let mark = undefined;
         for (const key of possibleKeys) {
           if (row[key] !== undefined && row[key] !== '') {
             mark = row[key];
@@ -225,10 +227,12 @@ export async function POST(
           }
         }
         
-        const obtainedMarks = parseInt(mark) || 0;
+        // Keep mark as null if empty, otherwise parse as number
+        const obtainedMarks = mark !== undefined && mark !== '' && mark !== null ? 
+          (isNaN(Number(mark)) ? 0 : Number(mark)) : null;
         
-        // Validate marks
-        if (obtainedMarks < 0 || obtainedMarks > question.maxMarks) {
+        // Validate marks (only validate if marks are not null)
+        if (obtainedMarks !== null && (obtainedMarks < 0 || obtainedMarks > question.maxMarks)) {
           errors.push(`Row ${i + 1}: Invalid marks for question ${j + 1}. Should be between 0 and ${question.maxMarks}`);
           continue;
         }
@@ -268,7 +272,7 @@ export async function POST(
             where: {
               questionId_sectionId_studentId_academicYear: {
                 questionId: mark.questionId,
-                sectionId: assessment.sectionId || null,
+                sectionId: assessment.sectionId || '',
                 studentId: result.studentId,
                 academicYear
               }
@@ -280,7 +284,7 @@ export async function POST(
             },
             create: {
               questionId: mark.questionId,
-              sectionId: assessment.sectionId || null,
+              sectionId: assessment.sectionId || '',
               studentId: result.studentId,
               obtainedMarks: mark.obtainedMarks,
               maxMarks: mark.maxMarks,

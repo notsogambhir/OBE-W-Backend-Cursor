@@ -50,7 +50,10 @@ export function IndirectAttainmentForm({ programId, batchId, poCodes, onSave }: 
       const poData = { ...updated[poCode] };
       
       if (field !== 'comments') {
-        poData[field] = value as number;
+        // Explicitly handle numeric fields
+        if (field === 'alumniSurvey' || field === 'exitSurvey' || field === 'employerSurvey' || field === 'average') {
+          poData[field] = value as number;
+        }
         // Recalculate average
         const surveys = [poData.alumniSurvey, poData.exitSurvey, poData.employerSurvey].filter(v => v > 0);
         poData.average = surveys.length > 0 ? surveys.reduce((sum, v) => sum + v, 0) / surveys.length : 0;

@@ -1035,8 +1035,8 @@ export default function ProgramOutcomesPage() {
                   </div>
                   <div className="text-sm text-gray-600">Not Attained</div>
                   <div className="text-xs text-gray-500">
-                    {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs > 0 ? 
-                      (((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.notAttainedPOs || 0) / ((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 1) * 100).toFixed(0) : 0}%
+                    {((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 0) > 0 ? 
+                      (((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.notAttainedPOs || 0) / ((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 1) * 100).toFixed(0) : '0'}%
                   </div>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
@@ -1045,8 +1045,8 @@ export default function ProgramOutcomesPage() {
                   </div>
                   <div className="text-sm text-gray-600">Level 1</div>
                   <div className="text-xs text-gray-500">
-                    {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs > 0 ? 
-                      (((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.level1POs || 0) / ((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 1) * 100).toFixed(0) : 0}%
+                    {((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 0) > 0 ? 
+                      (((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.level1POs || 0) / ((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 1) * 100).toFixed(0) : '0'}%
                   </div>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
@@ -1055,8 +1055,8 @@ export default function ProgramOutcomesPage() {
                   </div>
                   <div className="text-sm text-gray-600">Level 2</div>
                   <div className="text-xs text-gray-500">
-                    {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs > 0 ? 
-                      (((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.level2POs || 0) / ((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 1) * 100).toFixed(0) : 0}%
+                    {((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 0) > 0 ? 
+                      (((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.level2POs || 0) / ((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 1) * 100).toFixed(0) : '0'}%
                   </div>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
@@ -1065,8 +1065,8 @@ export default function ProgramOutcomesPage() {
                   </div>
                   <div className="text-sm text-gray-600">Level 3</div>
                   <div className="text-xs text-gray-500">
-                    {(viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs > 0 ? 
-                      (((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.level3POs || 0) / ((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 1) * 100).toFixed(0) : 0}%
+                    {((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 0) > 0 ? 
+                      (((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.level3POs || 0) / ((viewMode === 'batch' ? batchPOAttainmentData : poAttainmentData)?.totalPOs || 1) * 100).toFixed(0) : '0'}%
                   </div>
                 </div>
               </div>

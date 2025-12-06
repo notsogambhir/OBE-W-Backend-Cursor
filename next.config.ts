@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60 * 24 * 60 * 60, // 60 days
   },
-  // Turbopack configuration (empty to avoid webpack/turbopack conflict)
+  // Turbopack configuration
   turbopack: {},
   // Suppress WebSocket errors in preview environments
   webpack: (config, { dev, isServer }) => {

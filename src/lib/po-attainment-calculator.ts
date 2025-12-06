@@ -673,6 +673,7 @@ export class POAttainmentCalculator {
           poId: po.id,
           poCode: po.code,
           poDescription: po.description,
+          programId: po.programId, // Add missing programId
           targetAttainment,
           actualAttainment,
           coCount: course.courseOutcomes.length,
